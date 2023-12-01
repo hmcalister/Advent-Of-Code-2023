@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"hmcalister/aoc01/part01"
+	"hmcalister/aoc01/part02"
 	"log"
 	"os"
 )
@@ -17,7 +17,7 @@ func main() {
 	defer file.Close()
 
 	fileScanner := bufio.NewScanner(file)
-	result, err := part01.ProcessInput(fileScanner)
+	result, err := part02.ProcessInput(fileScanner)
 	if err != nil {
 		log.Fatalf("error processing file input: %v", err)
 	}
