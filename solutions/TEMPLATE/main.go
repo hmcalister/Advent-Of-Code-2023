@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"hmcalister/aoc02/part01"
+	"hmcalister/aocTemplate/part01"
 	"os"
 
 	"github.com/rs/zerolog"
