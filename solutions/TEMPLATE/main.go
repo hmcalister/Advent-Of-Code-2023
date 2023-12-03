@@ -14,6 +14,7 @@ const INPUT_FILE_PATH = "puzzleInput"
 
 func init() {
 	logToFileFlag := flag.Bool("logToFile", false, "Flag to log to file, rather than to console output")
+	flag.Parse()
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
