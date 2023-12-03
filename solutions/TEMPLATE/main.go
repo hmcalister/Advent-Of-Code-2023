@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"hmcalister/aocTemplate/part01"
 	"os"
 
@@ -12,15 +13,19 @@ import (
 const INPUT_FILE_PATH = "puzzleInput"
 
 func init() {
+	logToFileFlag := flag.Bool("logToFile", false, "Flag to log to file, rather than to console output")
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 
-	logFile, err := os.Create("log")
-	if err != nil {
-		log.Fatal().Msgf("Count not open log file: %v", err)
+	if *logToFileFlag {
+		logFile, err := os.Create("log")
+		if err != nil {
+			log.Fatal().Msgf("Count not open log file: %v", err)
+		}
+		log.Logger = zerolog.New(logFile).With().Timestamp().Logger()
 	}
-	log.Logger = zerolog.New(logFile).With().Timestamp().Logger()
 }
 
 func main() {
