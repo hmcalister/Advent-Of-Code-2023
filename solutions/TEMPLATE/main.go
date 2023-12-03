@@ -15,6 +15,12 @@ func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+
+	logFile, err := os.Create("log")
+	if err != nil {
+		log.Fatal().Msgf("Count not open log file: %v", err)
+	}
+	log.Logger = zerolog.New(logFile).With().Timestamp().Logger()
 }
 
 func main() {
