@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -127,6 +129,9 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 				return errors.Join(fmt.Errorf("failed to process Game %v", gameID), err)
 			}
 
+			log.Debug().
+				Int("Finished GameID", gameID).
+				Send()
 			resultsChan <- gamePower
 			return nil
 		})
