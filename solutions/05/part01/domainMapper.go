@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"math"
 	"slices"
+	"sort"
 
 	"github.com/rs/zerolog/log"
 )
@@ -37,37 +38,33 @@ func parseSectionToDomainMapper(fileScanner *bufio.Scanner) *domainMapper {
 			break
 		}
 		currentMapData = append(currentMapData, parseLineToMappingData(line))
-		log.Debug().Int("MapStart", currentMapData[len(currentMapData)-1].rangeStart).Send()
 	}
 	newDomainManager := &domainMapper{MapDataArray: currentMapData}
-	// sort.Slice(newDomainManager.MapDataArray, func(i, j int) bool {
-	// 	return newDomainManager.MapDataArray[i].rangeStart < newDomainManager.MapDataArray[j].rangeStart
-	// })
+	sort.Slice(newDomainManager.MapDataArray, func(i, j int) bool {
+		return newDomainManager.MapDataArray[i].rangeStart < newDomainManager.MapDataArray[j].rangeStart
+	})
 
 	boundaries := make([]int, 0)
-	// boundaries = append(boundaries, 0)
-	// for _, mapData := range newDomainManager.MapDataArray {
-	// 	boundaries = append(boundaries, mapData.rangeStart)
-	// 	boundaries = append(boundaries, mapData.rangeEnd)
-	// }
-	// boundaries = append(boundaries, math.MaxInt)
+	boundaries = append(boundaries, 0)
+	for _, mapData := range newDomainManager.MapDataArray {
+		boundaries = append(boundaries, mapData.rangeStart)
+		boundaries = append(boundaries, mapData.rangeEnd)
+	}
+	boundaries = append(boundaries, math.MaxInt)
 	newDomainManager.boundaries = slices.Compact(boundaries)
 
 	return newDomainManager
 }
 
-func parseFileToDomainMappers(fileScanner *bufio.Scanner) []*domainMapper {
+func parseFileToAllDomainMappers(fileScanner *bufio.Scanner) []*domainMapper {
 	// We start with a domain mapper that performs the identity mapping.
 	// As we parse each domain mapper, we will compose with this mapper.
 
-	domainMappers := make([]*domainMapper, 0)
-
+	allDomainMappers := make([]*domainMapper, 0)
 	for fileScanner.Scan() {
-		domainMappers = append(domainMappers, parseSectionToDomainMapper(fileScanner))
-
+		allDomainMappers = append(allDomainMappers, parseSectionToDomainMapper(fileScanner))
 	}
-
-	return domainMappers
+	return allDomainMappers
 }
 
 // Given two domain mappers, compose them and return a single domain mapper.
@@ -83,6 +80,11 @@ func composeDomainMappers(domainAMapper *domainMapper, domainBMapper *domainMapp
 	copy(composedBoundaries[len(domainAMapper.boundaries):], domainBMapper.boundaries)
 	slices.Sort(composedBoundaries)
 	composedBoundaries = slices.Compact(composedBoundaries)
+	log.Trace().
+		Interface("DomainAMapperBoundaries", domainAMapper.boundaries).
+		Interface("DomainBMapperBoundaries", domainBMapper.boundaries).
+		Interface("ComposedBoundaries", composedBoundaries).
+		Send()
 
 	composedMaps := make([]*mappingData, 0)
 	for boundaryIndex := 0; boundaryIndex < len(composedBoundaries)-1; boundaryIndex += 1 {
@@ -101,8 +103,6 @@ func composeDomainMappers(domainAMapper *domainMapper, domainBMapper *domainMapp
 			offset:     mapOffset,
 		})
 	}
-
-	// log.Trace().Interface("ComposedMapBoundaries", composedBoundaries).Send()
 
 	return &domainMapper{
 		MapDataArray: composedMaps,

@@ -30,16 +30,12 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	}
 	fileScanner.Scan()
 
-	allDomainMappers := parseFileToDomainMappers(fileScanner)
-	log.Debug().Int("NumDomainMappers", len(allDomainMappers)).Send()
+	composedDomainMapper := parseFileToComposedMapper(fileScanner)
 
 	minSeedVal := math.MaxInt
 	// Feed each seed through the maps and see where they end up
 	for i, seed := range seedValues {
-		seedMappedValue := seed
-		for _, dm := range allDomainMappers {
-			seedMappedValue = dm.MapValue(seedMappedValue)
-		}
+		seedMappedValue := composedDomainMapper.MapValue(seed)
 		log.Debug().
 			Int("SeedValueIndex", i).
 			Int("SeedValue", seed).
