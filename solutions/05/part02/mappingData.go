@@ -7,13 +7,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Structure to record the source range (given as sourceRangeStart:sourceRangeStart+rangeLength)
-// to destination range (given as destRangeStart:destRangeStart+rangeLength)
+// Structure to record the source range, given as [rangeStart:rangeEnd)
+// to destination range, given as [rangeStart+offset:rangeEnd+offset)
 // of a map.
 type mappingData struct {
-	rangeLength      int
-	sourceRangeStart int
-	offset           int
+	rangeStart int
+	rangeEnd   int
+	offset     int
 }
 
 // Parse a single line of puzzleInput to a mapping data struct.
@@ -37,26 +37,24 @@ func parseLineToMappingData(line string) *mappingData {
 		log.Fatal().Msgf("error parsing rangeLen:%v", err)
 	}
 
-	offset := (destinationRangeStart - sourceRangeStart)
 	md := &mappingData{
-		rangeLength,
-		sourceRangeStart,
-		offset,
+		rangeStart: sourceRangeStart,
+		rangeEnd:   sourceRangeStart + rangeLength,
+		offset:     destinationRangeStart - sourceRangeStart,
 	}
 
-	log.Trace().
-		Str("InitString", line).
-		Int("NumFields", len(parts)).
-		Int("rangeLength", rangeLength).
-		Int("sourceRangeStart", sourceRangeStart).
-		Int("offset", offset).
-		Send()
+	// log.Trace().
+	// 	Str("InitString", line).
+	// 	Interface("ParsedMapRangeStart", md.rangeStart).
+	// 	Interface("ParsedMapRangeEnd", md.rangeEnd).
+	// 	Interface("ParsedMapOffset", md.offset).
+	// 	Send()
 	return md
 }
 
 // Checks if the given testValue is in this mappingData's range.
 func (md *mappingData) IsInRange(testValue int) bool {
-	return md.sourceRangeStart <= testValue && testValue < md.sourceRangeStart+md.rangeLength
+	return md.rangeStart <= testValue && testValue < md.rangeEnd
 }
 
 // Maps the given value according to the mapping.

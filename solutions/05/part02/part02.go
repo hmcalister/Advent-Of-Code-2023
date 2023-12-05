@@ -17,7 +17,8 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	seedValuesStrs := strings.Fields(seedLine)
 	fileScanner.Scan()
 
-	composedDomainMapper := parseFileToComposedMapper(fileScanner)
+	domainMappersArray := parseFileToDomainMappersArray(fileScanner)
+	composedDomainMapper := composeDomainMappersArray(domainMappersArray)
 	log.Info().Int("TotalMapsOfComposedDomainMapper", len(composedDomainMapper.MapDataArray)).Send()
 
 	minMappedValue := math.MaxInt
@@ -37,7 +38,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		rangeValue := checkSeedRange(&seedRangeData{
 			SeedRangeStart:  seedValueStart,
 			SeedRangeLength: seedValueRange,
-		}, composedDomainMapper)
+		}, domainMappersArray, composedDomainMapper.boundaries)
 		if rangeValue < minMappedValue {
 			minMappedValue = rangeValue
 			log.Info().Msgf("New best location found: %v", minMappedValue)

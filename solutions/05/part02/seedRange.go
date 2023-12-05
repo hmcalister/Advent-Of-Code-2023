@@ -11,7 +11,7 @@ type seedRangeData struct {
 	SeedRangeLength int
 }
 
-func checkSeedRange(seedRange *seedRangeData, composedDomainMapper *domainMapper) int {
+func checkSeedRange(seedRange *seedRangeData, domainMappersArray []*domainMapper, mapBoundaries []int) int {
 	log.Info().Interface("CheckingSeedRange", seedRange).Send()
 
 	// We only need to check the beginning of each map, since the maps themselves are monotonically increasing.
@@ -21,30 +21,32 @@ func checkSeedRange(seedRange *seedRangeData, composedDomainMapper *domainMapper
 	// Find the map that contains the current seed
 
 	mapIndex := 0
-	targetMap := composedDomainMapper.MapDataArray[mapIndex]
-	for targetMap.sourceRangeStart+targetMap.rangeLength < currentSeedValue {
+	for mapBoundaries[mapIndex] < currentSeedValue {
 		mapIndex += 1
-		targetMap = composedDomainMapper.MapDataArray[mapIndex]
 	}
 
 	// Now just check maps until the start is beyond our target range
 
 	minSeedVal := math.MaxInt
 	for currentSeedValue < seedRange.SeedRangeStart+seedRange.SeedRangeLength {
-		mappedSeedValue := composedDomainMapper.MapValue(currentSeedValue)
+		mappedSeedValue := currentSeedValue
+		for _, dm := range domainMappersArray {
+			mappedSeedValue = dm.MapValue(mappedSeedValue)
+		}
 		if mappedSeedValue < minSeedVal {
 			minSeedVal = mappedSeedValue
 		}
+
 		log.Debug().
 			Int("CheckedSeed", currentSeedValue).
 			Int("MapIndex", mapIndex).
-			Int("MapFirstValue", composedDomainMapper.MapDataArray[mapIndex].sourceRangeStart).
-			Int("MapLastValue", composedDomainMapper.MapDataArray[mapIndex].sourceRangeStart+composedDomainMapper.MapDataArray[mapIndex].rangeLength).
+			Int("MapFirstValue", mapBoundaries[mapIndex]).
+			Int("MapLastValue", mapBoundaries[mapIndex+1]).
 			Int("MappedSeedValue", mappedSeedValue).
 			Send()
 
 		mapIndex += 1
-		currentSeedValue = composedDomainMapper.MapDataArray[mapIndex].sourceRangeStart
+		currentSeedValue = mapBoundaries[mapIndex]
 
 	}
 
