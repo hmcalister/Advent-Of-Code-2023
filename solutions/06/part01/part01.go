@@ -21,9 +21,15 @@ func (rd raceDetails) calculateError() int {
 	upperRoot := (float64(rd.timeAllowed) + math.Sqrt(float64(rd.timeAllowed*rd.timeAllowed-4*rd.bestDistance))) / 2
 
 	lowestAlpha := max(int(math.Floor(lowerRoot))+1, 0)
-	highestAlpha := min(int(math.Ceil(upperRoot))-1, rd.timeAllowed)
+	upperAlpha := min(int(math.Ceil(upperRoot))-1, rd.timeAllowed)
+	log.Trace().
+		Float64("LowerRoot", lowerRoot).
+		Float64("UpperRoot", upperRoot).
+		Int("LowestAlpha", lowestAlpha).
+		Int("UpperAlpha", upperAlpha).
+		Send()
 
-	return highestAlpha - lowestAlpha + 1
+	return upperAlpha - lowestAlpha + 1
 }
 
 func parseDataToRaceDetails(timeStrArr []string, distanceStrArr []string) []raceDetails {
