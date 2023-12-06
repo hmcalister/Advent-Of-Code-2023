@@ -2,6 +2,7 @@ package part02
 
 import (
 	"bufio"
+	"hmcalister/aoc05/lib"
 	"math"
 	"strconv"
 	"strings"
@@ -17,9 +18,10 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	seedValuesStrs := strings.Fields(seedLine)
 	fileScanner.Scan()
 
-	domainMappersArray := parseFileToDomainMappersArray(fileScanner)
-	composedDomainMapper := composeDomainMappersArray(domainMappersArray)
-	log.Info().Int("TotalMapsOfComposedDomainMapper", len(composedDomainMapper.MapDataArray)).Send()
+	allDomainMappers := lib.GetIdentityMapper()
+	for fileScanner.Scan() {
+		allDomainMappers = lib.ComposeDomainMappers(allDomainMappers, lib.ParseSectionToDomainMapper(fileScanner))
+	}
 
 	minMappedValue := math.MaxInt
 	for i := 0; i < len(seedValuesStrs); i += 2 {
@@ -35,10 +37,10 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 			log.Fatal().Msgf("error parsing seed value start:%v", err)
 		}
 
-		rangeValue := checkSeedRange(&seedRangeData{
+		rangeValue := checkSeedRange(seedRangeData{
 			SeedRangeStart:  seedValueStart,
 			SeedRangeLength: seedValueRange,
-		}, domainMappersArray, composedDomainMapper.boundaries)
+		}, allDomainMappers)
 		if rangeValue < minMappedValue {
 			minMappedValue = rangeValue
 			log.Info().Msgf("New best location found: %v", minMappedValue)
