@@ -2,6 +2,7 @@ package part01
 
 import (
 	"bufio"
+	"hmcalister/aoc05/lib"
 	"math"
 	"strconv"
 	"strings"
@@ -30,12 +31,15 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	}
 	fileScanner.Scan()
 
-	composedDomainMapper := parseFileToComposedMapper(fileScanner)
+	allDomainMappers := lib.GetIdentityMapper()
+	for fileScanner.Scan() {
+		allDomainMappers = lib.ComposeDomainMappers(allDomainMappers, lib.ParseSectionToDomainMapper(fileScanner))
+	}
 
 	minSeedVal := math.MaxInt
 	// Feed each seed through the maps and see where they end up
 	for i, seed := range seedValues {
-		seedMappedValue := composedDomainMapper.MapValue(seed)
+		seedMappedValue := allDomainMappers.MapValue(seed)
 		log.Debug().
 			Int("SeedValueIndex", i).
 			Int("SeedValue", seed).
