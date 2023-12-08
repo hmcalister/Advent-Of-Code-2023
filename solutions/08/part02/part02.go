@@ -62,6 +62,39 @@ func (path *pathData) parseLineToPathNodeData(line string) {
 	path.pathNodeMap[pathNodeLabel] = newPathNode
 }
 
+type pathTraversalData struct {
+	// Map from pathNodeLabel to index in our traversal
+	pathNodesSeenMap         map[string]int
+	pathTraversalNodes       []string
+	terminalTraversalIndices []int
+}
+
+func createPathTraversalData() *pathTraversalData {
+	pathTraversal := &pathTraversalData{}
+	pathTraversal.pathNodesSeenMap = make(map[string]int)
+	pathTraversal.pathTraversalNodes = make([]string, 0)
+	pathTraversal.terminalTraversalIndices = make([]int, 0)
+	return pathTraversal
+}
+
+// Push a new node onto the path traversal.
+//
+// If this node has already been seen, do not push and instead
+// return the index in which this node occurs
+func (pathTraversal *pathTraversalData) pushNextNode(node *pathNodeData) int {
+	// Check if we have seen this node before
+	if nodeLocation, ok := pathTraversal.pathNodesSeenMap[node.Label]; ok {
+		return nodeLocation
+	}
+
+	pathTraversal.pathNodesSeenMap[node.Label] = len(pathTraversal.pathTraversalNodes)
+	pathTraversal.pathTraversalNodes = append(pathTraversal.pathTraversalNodes, node.Label)
+	if node.IsTerminal {
+		pathTraversal.terminalTraversalIndices = append(pathTraversal.terminalTraversalIndices, len(pathTraversal.pathTraversalNodes))
+	}
+	return -1
+}
+
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	fileScanner.Scan()
 	directionsLine := fileScanner.Text()
@@ -77,60 +110,69 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 			log.Panic().Msgf("encountered unknown rune while parsing directions line at index %v: %v", i, r)
 		}
 	}
+	log.Info().Int("DirectionArrayLength", len(directionsArray)).Send()
 
 	path := createPath()
-
 	fileScanner.Scan()
 	for fileScanner.Scan() {
 		path.parseLineToPathNodeData(fileScanner.Text())
 	}
 
-	currentNodes := make([]*pathNodeData, len(path.allStartPathNodes))
-	copy(currentNodes, path.allStartPathNodes)
+	allStartNodes := make([]*pathNodeData, len(path.allStartPathNodes))
+	copy(allStartNodes, path.allStartPathNodes)
 	log.Debug().
-		Int("NumCurrentNodes", len(currentNodes)).
+		Int("NumStartNodes", len(allStartNodes)).
+		Interface("StartNodes", allStartNodes).
 		Send()
 
-	numSteps := 0
-	terminalNodeCount := 0
+	var nextDirection directionEnum
+	var currentNode *pathNodeData
 	var nextNode *pathNodeData
-	for {
-		terminalNodeCount = 0
-		nextDirection := directionsArray[numSteps%len(directionsArray)]
-		for currentNodeIndex, currentNode := range currentNodes {
-			log.Trace().
-				Interface("CurrentPathNode", currentNode).
-				Int("NumSteps", numSteps).
-				Str("NextDirection", nextDirection.String()).
-				Send()
+	allStartNodeTraversals := make([]*pathTraversalData, len(allStartNodes))
+	for startNodeIndex, startNode := range allStartNodes {
 
-			if nextDirection == DIRECTION_LEFT {
+		log.Info().
+			Int("StartNodeIndex", startNodeIndex).
+			Interface("StartNode", startNode).
+			Send()
+
+		currentNode = startNode
+		allStartNodeTraversals[startNodeIndex] = createPathTraversalData()
+		currentNodeTraversal := allStartNodeTraversals[startNodeIndex]
+		currentNodeTraversal.pushNextNode(currentNode)
+		step := 0
+		for {
+			nextDirection = directionsArray[step%len(directionsArray)]
+			if nextDirection == 'L' {
 				nextNode = path.pathNodeMap[currentNode.LeftNodeLabel]
 			} else {
 				nextNode = path.pathNodeMap[currentNode.RightNodeLabel]
 			}
-			currentNodes[currentNodeIndex] = nextNode
 
-			if nextNode.IsTerminal {
-				log.Trace().
-					Interface("TerminalNodeFound", nextNode).
-					Int("NumSteps", numSteps).
-					Send()
-				terminalNodeCount += 1
-			}
-		}
-		if terminalNodeCount >= 2 {
+			nextNodeTraversalIndex := currentNodeTraversal.pushNextNode(nextNode)
 			log.Debug().
-				Int("NumSteps", numSteps).
-				Int("TerminalNodeCount", terminalNodeCount).
+				Int("StartNodeIndex", startNodeIndex).
+				Int("Step", step).
+				Interface("NextNode", nextNode).
+				Int("NextNodeTraversalIndex", nextNodeTraversalIndex).
+				Int("TotalPathLength", len(currentNodeTraversal.pathTraversalNodes)).
 				Send()
-		}
-		if terminalNodeCount == len(currentNodes) {
-			break
-		}
+			if nextNodeTraversalIndex != -1 {
+				log.Info().
+					Int("StartNodeIndex", startNodeIndex).
+					Int("ClosedLoopIndex", nextNodeTraversalIndex).
+					Int("TotalPathLength", len(currentNodeTraversal.pathTraversalNodes)).
+					Int("LoopCycleLength", len(currentNodeTraversal.pathTraversalNodes)-nextNodeTraversalIndex).
+					Interface("TerminalLoopIndices", currentNodeTraversal.terminalTraversalIndices).
+					// Interface("LoopLabels", currentNodeTraversal.pathTraversalNodes).
+					Send()
+				break
+			}
 
-		numSteps += 1
+			step += 1
+			currentNode = nextNode
+		}
 	}
 
-	return numSteps, nil
+	return 0, nil
 }
