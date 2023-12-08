@@ -62,37 +62,25 @@ func (path *pathData) parseLineToPathNodeData(line string) {
 	path.pathNodeMap[pathNodeLabel] = newPathNode
 }
 
-type pathTraversalData struct {
-	// Map from pathNodeLabel to index in our traversal
-	pathNodesSeenMap         map[string]int
-	pathTraversalNodes       []string
-	terminalTraversalIndices []int
+// greatest common divisor (GCD) via Euclidean algorithm
+func gcd(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
 }
 
-func createPathTraversalData() *pathTraversalData {
-	pathTraversal := &pathTraversalData{}
-	pathTraversal.pathNodesSeenMap = make(map[string]int)
-	pathTraversal.pathTraversalNodes = make([]string, 0)
-	pathTraversal.terminalTraversalIndices = make([]int, 0)
-	return pathTraversal
-}
+// find Least Common Multiple (LCM) via GCD
+func lcm(a, b int, integers ...int) int {
+	result := a * b / gcd(a, b)
 
-// Push a new node onto the path traversal.
-//
-// If this node has already been seen, do not push and instead
-// return the index in which this node occurs
-func (pathTraversal *pathTraversalData) pushNextNode(node *pathNodeData) int {
-	// Check if we have seen this node before
-	if nodeLocation, ok := pathTraversal.pathNodesSeenMap[node.Label]; ok {
-		return nodeLocation
+	for i := 0; i < len(integers); i++ {
+		result = lcm(result, integers[i])
 	}
 
-	pathTraversal.pathNodesSeenMap[node.Label] = len(pathTraversal.pathTraversalNodes)
-	pathTraversal.pathTraversalNodes = append(pathTraversal.pathTraversalNodes, node.Label)
-	if node.IsTerminal {
-		pathTraversal.terminalTraversalIndices = append(pathTraversal.terminalTraversalIndices, len(pathTraversal.pathTraversalNodes))
-	}
-	return -1
+	return result
 }
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
@@ -125,10 +113,10 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		Interface("StartNodes", allStartNodes).
 		Send()
 
+	cumulativeLCM := 1
 	var nextDirection directionEnum
 	var currentNode *pathNodeData
 	var nextNode *pathNodeData
-	allStartNodeTraversals := make([]*pathTraversalData, len(allStartNodes))
 	for startNodeIndex, startNode := range allStartNodes {
 
 		log.Info().
@@ -137,42 +125,34 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 			Send()
 
 		currentNode = startNode
-		allStartNodeTraversals[startNodeIndex] = createPathTraversalData()
-		currentNodeTraversal := allStartNodeTraversals[startNodeIndex]
-		currentNodeTraversal.pushNextNode(currentNode)
 		step := 0
-		for {
+		for !currentNode.IsTerminal {
 			nextDirection = directionsArray[step%len(directionsArray)]
-			if nextDirection == 'L' {
+			if nextDirection == DIRECTION_LEFT {
 				nextNode = path.pathNodeMap[currentNode.LeftNodeLabel]
 			} else {
 				nextNode = path.pathNodeMap[currentNode.RightNodeLabel]
 			}
 
-			nextNodeTraversalIndex := currentNodeTraversal.pushNextNode(nextNode)
 			log.Debug().
 				Int("StartNodeIndex", startNodeIndex).
 				Int("Step", step).
 				Interface("NextNode", nextNode).
-				Int("NextNodeTraversalIndex", nextNodeTraversalIndex).
-				Int("TotalPathLength", len(currentNodeTraversal.pathTraversalNodes)).
 				Send()
-			if nextNodeTraversalIndex != -1 {
-				log.Info().
-					Int("StartNodeIndex", startNodeIndex).
-					Int("ClosedLoopIndex", nextNodeTraversalIndex).
-					Int("TotalPathLength", len(currentNodeTraversal.pathTraversalNodes)).
-					Int("LoopCycleLength", len(currentNodeTraversal.pathTraversalNodes)-nextNodeTraversalIndex).
-					Interface("TerminalLoopIndices", currentNodeTraversal.terminalTraversalIndices).
-					// Interface("LoopLabels", currentNodeTraversal.pathTraversalNodes).
-					Send()
-				break
-			}
 
-			step += 1
 			currentNode = nextNode
+			step += 1
 		}
+
+		cumulativeLCM = lcm(cumulativeLCM, step)
+		log.Info().
+			Int("StartNodeIndex", startNodeIndex).
+			Interface("StartNode", startNode).
+			Interface("TerminalNode", currentNode).
+			Int("NumSteps", step).
+			Int("CumulativeLCM", cumulativeLCM).
+			Send()
 	}
 
-	return 0, nil
+	return cumulativeLCM, nil
 }
