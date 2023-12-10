@@ -2,15 +2,14 @@ package part02
 
 import (
 	"bufio"
-	"slices"
 
 	"github.com/rs/zerolog/log"
 )
 
 const (
+	LINE_LENGTH int  = 20
 	START_RUNE  rune = 'S'
 	GROUND_RUNE rune = '.'
-	LINE_LENGTH int  = 141
 )
 
 var (
@@ -25,9 +24,11 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	PipeMaze = make([][]rune, 0)
 	LoopPipeLinearCoordinates = make(map[int]NodeData)
 
+	partition := newPartitionData()
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		PipeMaze = append(PipeMaze, []rune(line))
+		partition.PartitionIndicesArray = append(partition.PartitionIndicesArray, make([]int, len(line)))
 		log.Trace().
 			Int("YCoord", len(PipeMaze)).
 			Str("Line", line).
@@ -49,7 +50,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 
 	direction := determineStartDirection(startNode)
 	currentNode := startNode
-	LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
+	partition.PartitionIndicesArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
 	log.Debug().
 		Interface("StartNode", currentNode).
 		Str("StartNodeRune", string(currentNode.NodeRune)).
@@ -66,7 +67,6 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	for {
 		currentNode = currentNode.nextNode(direction)
 		direction = DirectionMap[direction][currentNode.NodeRune]
-		LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
 		log.Debug().
 			Interface("CurrentNode", currentNode).
 			Str("CurrentNodeRune", string(currentNode.NodeRune)).
@@ -79,6 +79,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 
 		loop.LoopNodes = append(loop.LoopNodes, currentNode)
 		loop.LoopDirection = append(loop.LoopDirection, direction)
+		partition.PartitionIndicesArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
 	}
 
 	log.Debug().Msg("finished parsing loop")
@@ -87,41 +88,23 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		Interface("LoopDirections", loop.LoopDirection).
 		Send()
 
-	enclosedNodeCoordinates := make(map[int]NodeData)
-	directionArr := []directionEnum{DIRECTION_NORTH, DIRECTION_EAST, DIRECTION_SOUTH, DIRECTION_WEST}
-	for loopNodeIndex := range loop.LoopNodes {
-		currentNode := loop.LoopNodes[loopNodeIndex]
-		loopDirection := loop.LoopDirection[loopNodeIndex]
-		probeDirection := directionArr[(slices.Index(directionArr, loopDirection)+3)%len(directionArr)]
-		log.Debug().
-			Int("LoopNodeIndex", loopNodeIndex).
-			Interface("LoopNode", currentNode).
-			Str("LoopDirection", loopDirection.String()).
-			Str("ProbeDirection", probeDirection.String()).Send()
+	for xCoord := 0; xCoord < LINE_LENGTH; xCoord += 1 {
+		partition.determinePartition(1, xCoord, 0)
+		partition.determinePartition(1, xCoord, len(PipeMaze)-1)
+	}
+	for yCoord := 0; yCoord < len(PipeMaze); yCoord += 1 {
+		partition.determinePartition(1, 0, yCoord)
+		partition.determinePartition(1, LINE_LENGTH-1, yCoord)
+	}
 
-		probeNode := currentNode.nextNode(probeDirection)
-		for {
-			linearProbeNodeCoordinate := probeNode.YCoordinate*LINE_LENGTH + probeNode.XCoordinate
-			_, probeNodeIsInLoop := LoopPipeLinearCoordinates[linearProbeNodeCoordinate]
-			log.Debug().
-				Interface("ProbeNode", probeNode).
-				Str("ProbeDirection", probeDirection.String()).
-				Bool("ProbeNodeIsInLoop", probeNodeIsInLoop).
-				Send()
-			if probeNodeIsInLoop {
-				break
+	enclosedNodeCount := 0
+	for yCoord := 0; yCoord < len(PipeMaze); yCoord += 1 {
+		for xCoord := 0; xCoord < LINE_LENGTH; xCoord += 1 {
+			if partition.PartitionIndicesArray[yCoord][xCoord] == 0 {
+				enclosedNodeCount += 1
 			}
-			if (probeDirection == DIRECTION_NORTH && probeNode.YCoordinate == 0) ||
-				(probeDirection == DIRECTION_EAST && probeNode.XCoordinate == LINE_LENGTH-1) ||
-				(probeDirection == DIRECTION_SOUTH && probeNode.YCoordinate == len(PipeMaze)-1) ||
-				(probeDirection == DIRECTION_WEST && probeNode.XCoordinate == 0) {
-				log.Panic().Msgf("loop appears to have opposite handedness")
-			}
-
-			enclosedNodeCoordinates[linearProbeNodeCoordinate] = probeNode
-			probeNode = probeNode.nextNode(probeDirection)
 		}
 	}
 
-	return len(enclosedNodeCoordinates), nil
+	return enclosedNodeCount, nil
 }
