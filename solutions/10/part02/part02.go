@@ -2,12 +2,13 @@ package part02
 
 import (
 	"bufio"
+	"regexp"
 
 	"github.com/rs/zerolog/log"
 )
 
 const (
-	LINE_LENGTH int  = 20
+	LINE_LENGTH int  = 140
 	START_RUNE  rune = 'S'
 	GROUND_RUNE rune = '.'
 )
@@ -24,11 +25,9 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	PipeMaze = make([][]rune, 0)
 	LoopPipeLinearCoordinates = make(map[int]NodeData)
 
-	partition := newPartitionData()
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		PipeMaze = append(PipeMaze, []rune(line))
-		partition.PartitionIndicesArray = append(partition.PartitionIndicesArray, make([]int, len(line)))
 		log.Trace().
 			Int("YCoord", len(PipeMaze)).
 			Str("Line", line).
@@ -50,7 +49,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 
 	direction := determineStartDirection(startNode)
 	currentNode := startNode
-	partition.PartitionIndicesArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
+	LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
 	log.Debug().
 		Interface("StartNode", currentNode).
 		Str("StartNodeRune", string(currentNode.NodeRune)).
@@ -79,7 +78,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 
 		loop.LoopNodes = append(loop.LoopNodes, currentNode)
 		loop.LoopDirection = append(loop.LoopDirection, direction)
-		partition.PartitionIndicesArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
+		LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
 	}
 
 	log.Debug().Msg("finished parsing loop")
@@ -88,19 +87,40 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		Interface("LoopDirections", loop.LoopDirection).
 		Send()
 
-	for xCoord := 0; xCoord < LINE_LENGTH; xCoord += 1 {
-		partition.determinePartition(1, xCoord, 0)
-		partition.determinePartition(1, xCoord, len(PipeMaze)-1)
-	}
 	for yCoord := 0; yCoord < len(PipeMaze); yCoord += 1 {
-		partition.determinePartition(1, 0, yCoord)
-		partition.determinePartition(1, LINE_LENGTH-1, yCoord)
+		for xCoord := 0; xCoord < LINE_LENGTH; xCoord += 1 {
+			linearCoordinate := yCoord*LINE_LENGTH + xCoord
+			if _, ok := LoopPipeLinearCoordinates[linearCoordinate]; !ok {
+				PipeMaze[yCoord][xCoord] = GROUND_RUNE
+			}
+		}
 	}
 
 	enclosedNodeCount := 0
+	loopCorner1 := regexp.MustCompile("F-*7")
+	loopCorner2 := regexp.MustCompile("L-*J")
+	loopBend1 := regexp.MustCompile("F-*J")
+	loopBend2 := regexp.MustCompile("L-*7")
 	for yCoord := 0; yCoord < len(PipeMaze); yCoord += 1 {
-		for xCoord := 0; xCoord < LINE_LENGTH; xCoord += 1 {
-			if partition.PartitionIndicesArray[yCoord][xCoord] == 0 {
+		originalLine := string(PipeMaze[yCoord])
+		line := originalLine
+		line = loopCorner1.ReplaceAllString(line, "")
+		line = loopCorner2.ReplaceAllString(line, "")
+		line = loopBend1.ReplaceAllString(line, "|")
+		line = loopBend2.ReplaceAllString(line, "|")
+		log.Debug().
+			Int("YCoord", yCoord).
+			Str("OriginalLine", originalLine).
+			Str("EffectiveLine", line).
+			Send()
+
+		enclosedFlag := false
+		for xCoord := 0; xCoord < len(line); xCoord += 1 {
+			if line[xCoord] == '|' {
+				enclosedFlag = !enclosedFlag
+			}
+
+			if line[xCoord] == '.' && enclosedFlag {
 				enclosedNodeCount += 1
 			}
 		}
