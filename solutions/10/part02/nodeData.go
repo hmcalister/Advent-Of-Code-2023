@@ -36,7 +36,6 @@ func determineStartDirection(startNode NodeData) directionEnum {
 	if strings.ContainsRune("|7F", nextNode.NodeRune) {
 		return DIRECTION_NORTH
 	}
-
 	return DIRECTION_EAST
 }
 
