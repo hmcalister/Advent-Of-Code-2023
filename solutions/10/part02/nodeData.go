@@ -44,4 +44,5 @@ type LoopData struct {
 	StartXCoordinate int
 	StartYCoordinate int
 	LoopNodes        []NodeData
+	LoopDirection    []directionEnum
 }

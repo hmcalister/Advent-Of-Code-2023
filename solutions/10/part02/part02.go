@@ -2,6 +2,7 @@ package part02
 
 import (
 	"bufio"
+	"slices"
 
 	"github.com/rs/zerolog/log"
 )
@@ -9,23 +10,25 @@ import (
 const (
 	START_RUNE  rune = 'S'
 	GROUND_RUNE rune = '.'
+	LINE_LENGTH int  = 141
 )
 
 var (
-	PipeMaze     [][]rune
-	DirectionMap map[directionEnum]map[rune]directionEnum
+	PipeMaze                  [][]rune
+	DirectionMap              map[directionEnum]map[rune]directionEnum
+	LoopPipeLinearCoordinates map[int]NodeData
 )
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	DirectionMap = createDirectionMap()
 
 	PipeMaze = make([][]rune, 0)
-	partition := newPartitionData()
+	LoopPipeLinearCoordinates = make(map[int]NodeData)
+
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		PipeMaze = append(PipeMaze, []rune(line))
-		partition.PartitionArray = append(partition.PartitionArray, make([]int, len(line)))
-		log.Debug().
+		log.Trace().
 			Int("YCoord", len(PipeMaze)).
 			Str("Line", line).
 			Send()
@@ -43,25 +46,27 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 			}
 		}
 	}
-	loop := LoopData{
-		StartXCoordinate: startNode.XCoordinate,
-		StartYCoordinate: startNode.YCoordinate,
-		LoopNodes:        []NodeData{startNode},
-	}
 
 	direction := determineStartDirection(startNode)
 	currentNode := startNode
-	partition.PartitionArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
+	LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
 	log.Debug().
 		Interface("StartNode", currentNode).
 		Str("StartNodeRune", string(currentNode.NodeRune)).
 		Str("Direction", direction.String()).
 		Send()
 
+	loop := LoopData{
+		StartXCoordinate: startNode.XCoordinate,
+		StartYCoordinate: startNode.YCoordinate,
+		LoopNodes:        []NodeData{startNode},
+		LoopDirection:    []directionEnum{direction},
+	}
+
 	for {
 		currentNode = currentNode.nextNode(direction)
 		direction = DirectionMap[direction][currentNode.NodeRune]
-		partition.PartitionArray[currentNode.YCoordinate][currentNode.XCoordinate] = -1
+		LoopPipeLinearCoordinates[currentNode.YCoordinate*LINE_LENGTH+currentNode.XCoordinate] = currentNode
 		log.Debug().
 			Interface("CurrentNode", currentNode).
 			Str("CurrentNodeRune", string(currentNode.NodeRune)).
@@ -73,20 +78,50 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		}
 
 		loop.LoopNodes = append(loop.LoopNodes, currentNode)
+		loop.LoopDirection = append(loop.LoopDirection, direction)
 	}
 
-	for yCoord, row := range PipeMaze {
-		for xCoord := range row {
-			if partition.PartitionArray[yCoord][xCoord] == 0 {
-				partition.determinePartition(xCoord, yCoord)
+	log.Debug().Msg("finished parsing loop")
+	log.Trace().
+		Interface("LoopNodes", loop.LoopNodes).
+		Interface("LoopDirections", loop.LoopDirection).
+		Send()
+
+	enclosedNodeCoordinates := make(map[int]NodeData)
+	directionArr := []directionEnum{DIRECTION_NORTH, DIRECTION_EAST, DIRECTION_SOUTH, DIRECTION_WEST}
+	for loopNodeIndex := range loop.LoopNodes {
+		currentNode := loop.LoopNodes[loopNodeIndex]
+		loopDirection := loop.LoopDirection[loopNodeIndex]
+		probeDirection := directionArr[(slices.Index(directionArr, loopDirection)+3)%len(directionArr)]
+		log.Debug().
+			Int("LoopNodeIndex", loopNodeIndex).
+			Interface("LoopNode", currentNode).
+			Str("LoopDirection", loopDirection.String()).
+			Str("ProbeDirection", probeDirection.String()).Send()
+
+		probeNode := currentNode.nextNode(probeDirection)
+		for {
+			linearProbeNodeCoordinate := probeNode.YCoordinate*LINE_LENGTH + probeNode.XCoordinate
+			_, probeNodeIsInLoop := LoopPipeLinearCoordinates[linearProbeNodeCoordinate]
+			log.Debug().
+				Interface("ProbeNode", probeNode).
+				Str("ProbeDirection", probeDirection.String()).
+				Bool("ProbeNodeIsInLoop", probeNodeIsInLoop).
+				Send()
+			if probeNodeIsInLoop {
+				break
 			}
+			if (probeDirection == DIRECTION_NORTH && probeNode.YCoordinate == 0) ||
+				(probeDirection == DIRECTION_EAST && probeNode.XCoordinate == LINE_LENGTH-1) ||
+				(probeDirection == DIRECTION_SOUTH && probeNode.YCoordinate == len(PipeMaze)-1) ||
+				(probeDirection == DIRECTION_WEST && probeNode.XCoordinate == 0) {
+				log.Panic().Msgf("loop appears to have opposite handedness")
+			}
+
+			enclosedNodeCoordinates[linearProbeNodeCoordinate] = probeNode
+			probeNode = probeNode.nextNode(probeDirection)
 		}
 	}
 
-	log.Info().
-		Interface("PartitionGroundCounts", partition.PartitionsGroundCount).
-		Interface("PartitionSizes", partition.PartitionSizes).
-		Send()
-
-	return 0, nil
+	return len(enclosedNodeCoordinates), nil
 }
