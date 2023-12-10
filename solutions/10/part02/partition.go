@@ -3,29 +3,18 @@ package part02
 import "github.com/rs/zerolog/log"
 
 type PartitionData struct {
-	PartitionArray        [][]int
-	NumPartitions         int
-	PartitionSizes        []int
-	PartitionsGroundCount []int
+	PartitionIndicesArray [][]int
 }
 
 func newPartitionData() *PartitionData {
 	return &PartitionData{
-		PartitionArray:        make([][]int, 0),
-		NumPartitions:         0,
-		PartitionSizes:        make([]int, 0),
-		PartitionsGroundCount: make([]int, 0),
+		PartitionIndicesArray: make([][]int, 0),
 	}
 }
 
-func (partition *PartitionData) determinePartition(xCoord int, yCoord int) {
-	partition.NumPartitions += 1
-	newPartitionIndex := partition.NumPartitions
-	partition.PartitionsGroundCount = append(partition.PartitionsGroundCount, 0)
-	partition.PartitionSizes = append(partition.PartitionsGroundCount, 0)
-
+func (partition *PartitionData) determinePartition(partitionID int, xCoord int, yCoord int) {
 	log.Debug().
-		Int("NewPartitionID", newPartitionIndex).
+		Int("NewPartitionID", partitionID).
 		Int("NewPartitionStartX", xCoord).
 		Int("NewPartitionStartY", yCoord).
 		Send()
@@ -46,22 +35,18 @@ func (partition *PartitionData) determinePartition(xCoord int, yCoord int) {
 		currentNode := nodesToExpand[0]
 		nodesToExpand = nodesToExpand[1:]
 		log.Debug().
-			Int("PartitionIndex", newPartitionIndex).
+			Int("partitionID", partitionID).
 			Int("Step", step).
 			Int("QueueLen", len(nodesToExpand)).
 			Interface("CurrentNode", currentNode).
 			Interface("Queue", nodesToExpand).
 			Send()
 
-		if partition.PartitionArray[yCoord][xCoord] != 0 {
+		if partition.PartitionIndicesArray[yCoord][xCoord] != 0 {
 			continue
 		}
 
-		partition.PartitionArray[yCoord][xCoord] = newPartitionIndex
-		partition.PartitionSizes[newPartitionIndex-1] += 1
-		if currentNode.NodeRune == GROUND_RUNE {
-			partition.PartitionsGroundCount[newPartitionIndex-1] += 1
-		}
+		partition.PartitionIndicesArray[yCoord][xCoord] = partitionID
 
 		if yCoord > 0 {
 			nodesToExpand = append(nodesToExpand, currentNode.nextNode(DIRECTION_NORTH))
@@ -75,13 +60,5 @@ func (partition *PartitionData) determinePartition(xCoord int, yCoord int) {
 		if xCoord < len(PipeMaze[yCoord])-1 {
 			nodesToExpand = append(nodesToExpand, currentNode.nextNode(DIRECTION_EAST))
 		}
-
-		log.Debug().
-			Int("PartitionIndex", newPartitionIndex).
-			Int("Step", step).
-			Int("QueueLen", len(nodesToExpand)).
-			Interface("Queue", nodesToExpand).
-			Send()
-
 	}
 }
