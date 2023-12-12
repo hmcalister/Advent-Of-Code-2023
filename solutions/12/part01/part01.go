@@ -40,10 +40,11 @@ func parseLineToSpringRowData(line string) lib.SpringRowData {
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	result := 0
+	possibleArrangementsCalculator := lib.NewPossibleArrangementsCalculator()
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		row := parseLineToSpringRowData(line)
-		rowArrangements := lib.CalculatePossibleArrangements(row.RowLine, row.ContiguousDamagedGroupData)
+		rowArrangements := possibleArrangementsCalculator.CalculatePossibleArrangements(row.RowLine, row.ContiguousDamagedGroupData)
 		result += rowArrangements
 
 		log.Debug().
