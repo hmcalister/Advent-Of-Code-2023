@@ -13,12 +13,12 @@ const (
 	UNKNOWN_SPRING_RUNE     rune = '?'
 )
 
-type springRowData struct {
+type SpringRowData struct {
 	RowLine                    string
 	ContiguousDamagedGroupData []int
 }
 
-func parseLineToSpringRowData(line string) springRowData {
+func ParseLineToSpringRowData(line string) SpringRowData {
 	fields := strings.Fields(line)
 	log.Trace().
 		Str("ParsedLine", line).
@@ -41,13 +41,13 @@ func parseLineToSpringRowData(line string) springRowData {
 
 	rowLine := strings.Trim(fields[0], string(OPERATIONAL_SPRING_RUNE))
 	// rowLine = rowLine + string(OPERATIONAL_SPRING_RUNE)
-	return springRowData{
+	return SpringRowData{
 		RowLine:                    rowLine,
 		ContiguousDamagedGroupData: contiguousDamagedGroupData,
 	}
 }
 
-func calculatePossibleArrangements(line string, remainingGroups []int) int {
+func CalculatePossibleArrangements(line string, remainingGroups []int) int {
 	log.Trace().
 		Str("Line", line).
 		Interface("RemainingGroups", remainingGroups).
@@ -70,7 +70,7 @@ func calculatePossibleArrangements(line string, remainingGroups []int) int {
 		log.Trace().Msg("considering both variations of unknown start spring")
 		unknownAsDamagedSpringLine := strings.Replace(line, string(UNKNOWN_SPRING_RUNE), string(DAMAGED_SPRING_RUNE), 1)
 		unknownAsOperationalSpringLine := strings.Replace(line, string(UNKNOWN_SPRING_RUNE), string(OPERATIONAL_SPRING_RUNE), 1)
-		return calculatePossibleArrangements(unknownAsDamagedSpringLine, remainingGroups) + calculatePossibleArrangements(unknownAsOperationalSpringLine, remainingGroups)
+		return CalculatePossibleArrangements(unknownAsDamagedSpringLine, remainingGroups) + CalculatePossibleArrangements(unknownAsOperationalSpringLine, remainingGroups)
 	}
 
 	// Otherwise, our line must start with a damaged spring! ----------------------------------------------------------
@@ -103,9 +103,9 @@ func calculatePossibleArrangements(line string, remainingGroups []int) int {
 		}
 
 		// Otherwise, we can try the subproblem by removing the first group and the associated start of line!
-		return calculatePossibleArrangements(line[remainingGroups[0]+1:], remainingGroups[1:])
+		return CalculatePossibleArrangements(line[remainingGroups[0]+1:], remainingGroups[1:])
 	} else {
 		// There is exactly one group remaining!
-		return calculatePossibleArrangements(line[remainingGroups[0]:], remainingGroups[1:])
+		return CalculatePossibleArrangements(line[remainingGroups[0]:], remainingGroups[1:])
 	}
 }
