@@ -18,6 +18,7 @@ type SpringRowData struct {
 	ContiguousDamagedGroupData []int
 }
 
+// A calculator to keep track of all possible arrangements - with caching!
 type PossibleArrangementsCalculator struct {
 	possibleARrangementsCache map[string]int
 }
