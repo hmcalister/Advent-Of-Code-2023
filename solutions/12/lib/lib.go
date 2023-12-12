@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -16,35 +15,6 @@ const (
 type SpringRowData struct {
 	RowLine                    string
 	ContiguousDamagedGroupData []int
-}
-
-func ParseLineToSpringRowData(line string) SpringRowData {
-	fields := strings.Fields(line)
-	log.Trace().
-		Str("ParsedLine", line).
-		Interface("Fields", fields).
-		Msg("Parsing Line To Data")
-
-	contiguousDamagedGroupDataStrs := strings.Split(fields[1], ",")
-	contiguousDamagedGroupData := make([]int, len(contiguousDamagedGroupDataStrs))
-	for i, str := range contiguousDamagedGroupDataStrs {
-		parsedInt, err := strconv.Atoi(str)
-		if err != nil {
-			log.Fatal().Msgf("failed to parsed contiguousDamagedGroup string %v to integer on line %v", str, line)
-		}
-		log.Trace().
-			Str("ContiguousGroupString", str).
-			Int("ParsedInt", parsedInt).
-			Send()
-		contiguousDamagedGroupData[i] = parsedInt
-	}
-
-	rowLine := strings.Trim(fields[0], string(OPERATIONAL_SPRING_RUNE))
-	// rowLine = rowLine + string(OPERATIONAL_SPRING_RUNE)
-	return SpringRowData{
-		RowLine:                    rowLine,
-		ContiguousDamagedGroupData: contiguousDamagedGroupData,
-	}
 }
 
 func CalculatePossibleArrangements(line string, remainingGroups []int) int {
