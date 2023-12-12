@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
@@ -17,7 +18,40 @@ type SpringRowData struct {
 	ContiguousDamagedGroupData []int
 }
 
-func CalculatePossibleArrangements(line string, remainingGroups []int) int {
+type PossibleArrangementsCalculator struct {
+	possibleARrangementsCache map[string]int
+}
+
+func NewPossibleArrangementsCalculator() *PossibleArrangementsCalculator {
+	return &PossibleArrangementsCalculator{
+		possibleARrangementsCache: make(map[string]int),
+	}
+}
+
+func (calc *PossibleArrangementsCalculator) CalculatePossibleArrangements(line string, remainingGroups []int) int {
+	inputHash := calc.convertLineAndGroupsToString(line, remainingGroups)
+	if result, ok := calc.possibleARrangementsCache[inputHash]; ok {
+		return result
+	} else {
+		result := calc.calculatePossibleArrangementsRecursive(line, remainingGroups)
+		calc.possibleARrangementsCache[inputHash] = result
+		return result
+	}
+}
+
+func (calc *PossibleArrangementsCalculator) convertLineAndGroupsToString(line string, remainingGroups []int) string {
+	var strBuilder strings.Builder
+	for i, v := range remainingGroups {
+		if i > 0 {
+			strBuilder.WriteString(",")
+		}
+		strBuilder.WriteString(strconv.Itoa(v))
+	}
+	remainingGroupsStr := strBuilder.String()
+	return line + " " + remainingGroupsStr
+}
+
+func (calc *PossibleArrangementsCalculator) calculatePossibleArrangementsRecursive(line string, remainingGroups []int) int {
 	log.Trace().
 		Str("Line", line).
 		Interface("RemainingGroups", remainingGroups).
@@ -40,7 +74,7 @@ func CalculatePossibleArrangements(line string, remainingGroups []int) int {
 		log.Trace().Msg("considering both variations of unknown start spring")
 		unknownAsDamagedSpringLine := strings.Replace(line, string(UNKNOWN_SPRING_RUNE), string(DAMAGED_SPRING_RUNE), 1)
 		unknownAsOperationalSpringLine := strings.Replace(line, string(UNKNOWN_SPRING_RUNE), string(OPERATIONAL_SPRING_RUNE), 1)
-		return CalculatePossibleArrangements(unknownAsDamagedSpringLine, remainingGroups) + CalculatePossibleArrangements(unknownAsOperationalSpringLine, remainingGroups)
+		return calc.CalculatePossibleArrangements(unknownAsDamagedSpringLine, remainingGroups) + calc.CalculatePossibleArrangements(unknownAsOperationalSpringLine, remainingGroups)
 	}
 
 	// Otherwise, our line must start with a damaged spring! ----------------------------------------------------------
@@ -73,9 +107,9 @@ func CalculatePossibleArrangements(line string, remainingGroups []int) int {
 		}
 
 		// Otherwise, we can try the subproblem by removing the first group and the associated start of line!
-		return CalculatePossibleArrangements(line[remainingGroups[0]+1:], remainingGroups[1:])
+		return calc.CalculatePossibleArrangements(line[remainingGroups[0]+1:], remainingGroups[1:])
 	} else {
 		// There is exactly one group remaining!
-		return CalculatePossibleArrangements(line[remainingGroups[0]:], remainingGroups[1:])
+		return calc.CalculatePossibleArrangements(line[remainingGroups[0]:], remainingGroups[1:])
 	}
 }
