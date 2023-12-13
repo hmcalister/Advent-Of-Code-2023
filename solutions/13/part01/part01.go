@@ -14,7 +14,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	result := 0
 	for _, pattern := range filePatterns {
 		log.Debug().Interface("Pattern", pattern).Send()
-		rowReflectionIndex, columnReflectionIndex := pattern.FindReflections()
+		rowReflectionIndex, columnReflectionIndex := pattern.FindReflectionsIndices()
 
 		result += rowReflectionIndex + 100*columnReflectionIndex
 	}
