@@ -175,7 +175,7 @@ func (platform *PlatformData) RollWest() {
 				platform.rows[rowIndex][colIndex] = EMPTY_SPACE
 
 				// The rounded rock in this position will roll away to the stopping index
-				platform.rows[stoppingIndex+1][colIndex] = ROUNDED_ROCK
+				platform.rows[rowIndex][stoppingIndex+1] = ROUNDED_ROCK
 
 				// The stoppingIndex of this column is now the roundedRock we just updated
 				stoppingIndex = stoppingIndex + 1
@@ -214,7 +214,7 @@ func (platform *PlatformData) RollEast() {
 				platform.rows[rowIndex][colIndex] = EMPTY_SPACE
 
 				// The rounded rock in this position will roll away to the stopping index
-				platform.rows[stoppingIndex-1][colIndex] = ROUNDED_ROCK
+				platform.rows[rowIndex][stoppingIndex-1] = ROUNDED_ROCK
 
 				// The stoppingIndex of this column is now the roundedRock we just updated
 				stoppingIndex = stoppingIndex - 1
@@ -260,6 +260,7 @@ func (platform *PlatformData) PerformCycles(numberOfCycles int) {
 		platform.RollWest()
 		platform.RollSouth()
 		platform.RollEast()
+		platform.LogCurrentRows()
 		stateAfter := platform.convertRowsToString()
 		platform.addToCache(stateBeforeHash, stateAfter)
 	}
