@@ -20,25 +20,25 @@ func CreateLayoutData(fileScanner *bufio.Scanner) [][]LayoutRuneEnum {
 	var line string
 	var lineLength int
 
-	layout := make([][]LayoutRuneEnum, 0)
+	layoutRunes := make([][]LayoutRuneEnum, 0)
 
 	for fileScanner.Scan() {
 		line = fileScanner.Text()
 		lineLength = len(line)
-		layout = append(layout, make([]LayoutRuneEnum, lineLength))
+		layoutRunes = append(layoutRunes, make([]LayoutRuneEnum, lineLength))
 
 		for runeIndex, r := range line {
 			layoutRune := LayoutRuneEnum(r)
 			log.Trace().
-				Int("LineIndex", len(layout)-1).
+				Int("LineIndex", len(layoutRunes)-1).
 				Int("RuneIndex", runeIndex).
 				Str("RuneFound", layoutRune.String()).
 				Send()
-			layout[len(layout)-1][runeIndex] = layoutRune
+			layoutRunes[len(layoutRunes)-1][runeIndex] = layoutRune
 		}
 	}
 
-	return layout
+	return layoutRunes
 }
 
 func NewLayoutData(layoutRunes [][]LayoutRuneEnum, initialLightRay *LightRay) *LayoutData {
