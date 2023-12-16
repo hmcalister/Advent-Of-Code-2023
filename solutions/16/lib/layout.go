@@ -16,7 +16,7 @@ type LayoutData struct {
 	directionMap               map[DirectionEnum]map[LayoutRuneEnum][]DirectionEnum
 }
 
-func NewLayoutData(fileScanner *bufio.Scanner, initialLightRay *LightRay) *LayoutData {
+func CreateLayoutData(fileScanner *bufio.Scanner) [][]LayoutRuneEnum {
 	var line string
 	var lineLength int
 
@@ -38,9 +38,13 @@ func NewLayoutData(fileScanner *bufio.Scanner, initialLightRay *LightRay) *Layou
 		}
 	}
 
+	return layout
+}
+
+func NewLayoutData(layoutRunes [][]LayoutRuneEnum, initialLightRay *LightRay) *LayoutData {
 	return &LayoutData{
-		Layout:                     layout,
-		LineLength:                 lineLength,
+		Layout:                     layoutRunes,
+		LineLength:                 len(layoutRunes[0]),
 		EnergizedLinearCoordinates: make([]int, 0),
 		ProcessedLightRayMap:       make(map[string]interface{}),
 		UnprocessedLightRays:       []*LightRay{initialLightRay},
