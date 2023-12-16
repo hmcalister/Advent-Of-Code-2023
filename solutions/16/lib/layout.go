@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bufio"
+	"slices"
 
 	"github.com/rs/zerolog/log"
 )
@@ -15,7 +16,7 @@ type LayoutData struct {
 	directionMap               map[DirectionEnum]map[LayoutRuneEnum][]DirectionEnum
 }
 
-func NewLayoutData(fileScanner *bufio.Scanner) *LayoutData {
+func NewLayoutData(fileScanner *bufio.Scanner, initialLightRay *LightRay) *LayoutData {
 	var line string
 	var lineLength int
 
@@ -42,12 +43,8 @@ func NewLayoutData(fileScanner *bufio.Scanner) *LayoutData {
 		LineLength:                 lineLength,
 		EnergizedLinearCoordinates: make([]int, 0),
 		ProcessedLightRayMap:       make(map[string]interface{}),
-		UnprocessedLightRays: []*LightRay{{
-			Direction: DIRECTION_EAST,
-			XCoord:    0,
-			YCoord:    0,
-		}},
-		directionMap: CreateDirectionMap(),
+		UnprocessedLightRays:       []*LightRay{initialLightRay},
+		directionMap:               CreateDirectionMap(),
 	}
 }
 
@@ -93,6 +90,9 @@ func (layout *LayoutData) ProcessLayout() {
 		layout.EnergizedLinearCoordinates = append(layout.EnergizedLinearCoordinates, layout.CartesianToLinearCoordinate(currentRay.XCoord, currentRay.YCoord))
 		layout.processLightRay(currentRay)
 	}
+
+	slices.Sort(layout.EnergizedLinearCoordinates)
+	layout.EnergizedLinearCoordinates = slices.Compact(layout.EnergizedLinearCoordinates)
 }
 
 func (layout *LayoutData) ShowLayout() {
