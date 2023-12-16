@@ -8,13 +8,17 @@ import (
 )
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
-	layout := lib.NewLayoutData(fileScanner, &lib.LightRay{
+	layoutRunes := lib.CreateLayoutData(fileScanner)
+
+	layout := lib.NewLayoutData(layoutRunes, &lib.LightRay{
 		Direction: lib.DIRECTION_EAST,
 		XCoord:    0,
 		YCoord:    0,
 	})
 	layout.ShowLayout()
+
 	layout.ProcessLayout()
+
 	log.Debug().Interface("EnergizedLinearCoords", layout.EnergizedLinearCoordinates).Send()
 	layout.ShowEnergizedCells()
 
