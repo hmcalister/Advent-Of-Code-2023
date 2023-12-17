@@ -11,12 +11,10 @@ const (
 )
 
 type positionData struct {
-	Direction        DirectionEnum
-	DirectionCount   int
-	CoordinateString string
-	XCoord           int
-	YCoord           int
-	GScore           int
-	HScore           int
-	FScore           int
+	Direction         DirectionEnum
+	DirectionCount    int
+	CoordinateString  string
+	XCoord            int
+	YCoord            int
+	TraversedDistance int
 }
