@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
-	"hmcalister/aoc17/part01"
+	"hmcalister/aoc17/part02"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -17,7 +17,7 @@ func init() {
 	flag.Parse()
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 
 	if *logToFileFlag {
@@ -37,7 +37,7 @@ func main() {
 	defer file.Close()
 
 	fileScanner := bufio.NewScanner(file)
-	result, err := part01.ProcessInput(fileScanner)
+	result, err := part02.ProcessInput(fileScanner)
 	if err != nil {
 		log.Panic().Msgf("error processing file input: %v", err)
 	}
