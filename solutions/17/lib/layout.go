@@ -2,7 +2,7 @@ package lib
 
 import (
 	"bufio"
-	"container/heap"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -53,14 +53,19 @@ func (layout *LayoutData) checkGoalNode(node pathFindNodeData) bool {
 }
 
 func (layout *LayoutData) PathFind() int {
+	var currentNode pathFindNodeData
 	visited := make(map[string]pathFindNodeData)
-	priorityQueue := make(PriorityQueue, 0)
-	heap.Push(&priorityQueue, newPathFindNode(coordinate{1, 0}, DIRECTION_RIGHT, 0, layout.CostMap[1][0]))
-	heap.Push(&priorityQueue, newPathFindNode(coordinate{0, 1}, DIRECTION_DOWN, 0, layout.CostMap[0][1]))
+	openSet := make([]pathFindNodeData, 0)
+	openSet = append(openSet, newPathFindNode(coordinate{1, 0}, DIRECTION_RIGHT, 0, layout.CostMap[1][0]))
+	openSet = append(openSet, newPathFindNode(coordinate{0, 1}, DIRECTION_DOWN, 0, layout.CostMap[0][1]))
 
-	for priorityQueue.Len() > 0 {
-		currentNode := heap.Pop(&priorityQueue).(pathFindNodeData)
+	for len(openSet) > 0 {
+		sort.Slice(openSet, func(i, j int) bool {
+			return openSet[i].Cost < openSet[j].Cost
+		})
+		currentNode, openSet = openSet[0], openSet[1:]
 		log.Debug().Str("CurrentNode", currentNode.String()).Send()
+
 		// If we are at the goal and have a valid streak length, we are done
 		if layout.checkGoalNode(currentNode) && layout.minPathStreak <= currentNode.Streak {
 			return currentNode.Cost
@@ -76,7 +81,7 @@ func (layout *LayoutData) PathFind() int {
 		if currentNode.Streak < layout.maxPathStreak-1 && layout.checkValidCoordinate(nextCoord) {
 			nextCost := currentNode.Cost + layout.CostMap[nextCoord.Y][nextCoord.X]
 			nextNode := newPathFindNode(nextCoord, currentNode.Direction, currentNode.Streak+1, nextCost)
-			heap.Push(&priorityQueue, nextNode)
+			openSet = append(openSet, nextNode)
 			log.Trace().Interface("ConsideringNode", nextNode).Send()
 		}
 		// If we have continued on this path long enough, consider turning as well
@@ -100,7 +105,7 @@ func (layout *LayoutData) PathFind() int {
 				}
 				nextCost := currentNode.Cost + layout.CostMap[nextCoord.Y][nextCoord.X]
 				nextNode := newPathFindNode(nextCoord, nextDirection, 0, nextCost)
-				heap.Push(&priorityQueue, nextNode)
+				openSet = append(openSet, nextNode)
 				log.Trace().Interface("ConsideringNode", nextNode).Send()
 			}
 		}
