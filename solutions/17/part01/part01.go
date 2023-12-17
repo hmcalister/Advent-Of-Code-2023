@@ -8,11 +8,10 @@ import (
 )
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
-	costMap := lib.GetCostMapFromFileScanner(fileScanner)
-	layout := lib.NewLayout(costMap)
-	goalState := layout.AStarPathFind()
+	layout := lib.NewLayout(fileScanner)
+	goalState := layout.DijkstraPathFind()
 	if goalState == nil {
 		log.Fatal().Msg("no path found")
 	}
-	return goalState.GScore, nil
+	return goalState.TraversedDistance, nil
 }
