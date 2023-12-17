@@ -1,7 +1,12 @@
-package part02
+package part01
 
-import "bufio"
+import (
+	"bufio"
+	"hmcalister/aoc17/lib"
+)
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
-	return 0, nil
+	layout := lib.NewLayoutFromFileScanner(fileScanner, 3, 10)
+	goalDist := layout.PathFind()
+	return goalDist, nil
 }
