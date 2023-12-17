@@ -12,11 +12,12 @@ func _() {
 	_ = x[DIRECTION_EAST-1]
 	_ = x[DIRECTION_SOUTH-2]
 	_ = x[DIRECTION_WEST-3]
+	_ = x[DIRECTION_UNDEFINED-4]
 }
 
-const _DirectionEnum_name = "DIRECTION_NORTHDIRECTION_EASTDIRECTION_SOUTHDIRECTION_WEST"
+const _DirectionEnum_name = "DIRECTION_NORTHDIRECTION_EASTDIRECTION_SOUTHDIRECTION_WESTDIRECTION_UNDEFINED"
 
-var _DirectionEnum_index = [...]uint8{0, 15, 29, 44, 58}
+var _DirectionEnum_index = [...]uint8{0, 15, 29, 44, 58, 77}
 
 func (i DirectionEnum) String() string {
 	if i < 0 || i >= DirectionEnum(len(_DirectionEnum_index)-1) {
