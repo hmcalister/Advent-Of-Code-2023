@@ -4,9 +4,8 @@ package lib
 type DirectionEnum int
 
 const (
-	DIRECTION_NORTH     DirectionEnum = iota
-	DIRECTION_EAST      DirectionEnum = iota
-	DIRECTION_SOUTH     DirectionEnum = iota
-	DIRECTION_WEST      DirectionEnum = iota
-	DIRECTION_UNDEFINED DirectionEnum = iota
+	DIRECTION_UP    DirectionEnum = iota
+	DIRECTION_RIGHT DirectionEnum = iota
+	DIRECTION_DOWN  DirectionEnum = iota
+	DIRECTION_LEFT  DirectionEnum = iota
 )
