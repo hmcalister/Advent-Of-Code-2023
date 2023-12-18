@@ -9,8 +9,8 @@ import (
 )
 
 type DigLayoutData struct {
-	// The stretch data for each row
-	rowStretchCovers []rowStretchCoverData
+	// The coordinate of each trench turn
+	trenchCoordinates []coordinate
 
 	// The digLayout dimensions
 	XLim int
@@ -51,34 +51,31 @@ func parseLineData(line string) (DirectionEnum, int) {
 func NewDigLayoutFromFileScanner(fileScanner *bufio.Scanner) *DigLayoutData {
 	var line string
 	var currentCoordinate coordinate
-	var previousCoordinate coordinate
 
 	currentCoordinate = coordinate{0, 0}
-	previousCoordinate = currentCoordinate
 
 	digLayout := &DigLayoutData{
-		rowStretchCovers: make([]rowStretchCoverData, 0),
-		XLim:             0,
-		YLim:             0,
+		trenchCoordinates: make([]coordinate, 0),
+		XLim:              0,
+		YLim:              0,
 	}
 
+	// digLayout.trenchCoordinates = append(digLayout.trenchCoordinates, currentCoordinate)
+
 	// Parse each line in the file, creating new trenches as we go
-	//
-	// We also update the rowStretches as we go, so we can figure out how many interior points there are
 	for fileScanner.Scan() {
 		line = fileScanner.Text()
 		trenchDirection, trenchLength := parseLineData(line)
-		currentCoordinate = currentCoordinate.Move(trenchDirection, trenchLength)
+		log.Debug().
+			Str("TrenchDirection", trenchDirection.String()).
+			Int("TrenchLength", trenchLength).
+			Interface("CoordinateInitial", currentCoordinate).
+			Interface("CoordinateFinal", currentCoordinate.Move(trenchDirection, trenchLength)).
+			Send()
 
-		if trenchDirection == DIRECTION_RIGHT {
-			newStrechData := stretchData{
-				stretchStart: previousCoordinate.X,
-				stretchLen:   currentCoordinate.X - previousCoordinate.X,
-				interior:     true,
-			}
-			rowIndex := currentCoordinate.Y
-			digLayout.rowStretchCovers[rowIndex].
-		}
+		currentCoordinate = currentCoordinate.Move(trenchDirection, trenchLength)
+		digLayout.updateLimitsAndRowStretches(currentCoordinate)
+		digLayout.trenchCoordinates = append(digLayout.trenchCoordinates, currentCoordinate)
 	}
 
 	return digLayout
@@ -87,10 +84,6 @@ func NewDigLayoutFromFileScanner(fileScanner *bufio.Scanner) *DigLayoutData {
 func (digLayout *DigLayoutData) updateLimitsAndRowStretches(newCoordinate coordinate) {
 	digLayout.XLim = max(digLayout.XLim, newCoordinate.X+1)
 	digLayout.YLim = max(digLayout.YLim, newCoordinate.Y+1)
-
-	for y := len(digLayout.rowStretchCovers); y < digLayout.YLim; y += 1 {
-		digLayout.rowStretchCovers = append(digLayout.rowStretchCovers, newRowStretchCover())
-	}
 }
 
 func (digLayout *DigLayoutData) VisualizeDigLayout() {
@@ -98,91 +91,34 @@ func (digLayout *DigLayoutData) VisualizeDigLayout() {
 		Int("XLim", digLayout.XLim).
 		Int("YLim", digLayout.YLim).
 		Send()
-}
 
-func (digLayout *DigLayoutData) ExcavateInterior() {
-	var isInterior bool
-
-	interiorTrench := TrenchData{
-		DigDirection: DIRECTION_NONE,
+	for trenchIndex, trenchCoordinate := range digLayout.trenchCoordinates {
+		log.Debug().
+			Int("TrenchIndex", trenchIndex).
+			Interface("TrenchCoordinate", trenchCoordinate).
+			Send()
 	}
-
-	// Skip the first and last row and column, as these can never have interior points
-	for y := digLayout.YMin; y < digLayout.YMax-1; y += 1 {
-		pbar.Add(1)
-		isInterior = false
-
-		for x := digLayout.XMin; x < digLayout.XMax-1; x += 1 {
-			currentCoordinate := coordinate{x, y}
-			// Check if we have encountered a new trench edge
-
-			if trench, ok := digLayout.DigMap[currentCoordinate]; ok {
-				var ok bool
-				var capTrench TrenchData
-				if trench.DigDirection == DIRECTION_UP {
-					// Skip past any remaining trenches
-					for ; x < digLayout.XMax-1; x += 1 {
-						currentCoordinate = coordinate{x, y}
-						if _, ok := digLayout.DigMap[currentCoordinate]; !ok {
-							x -= 1
-							currentCoordinate = coordinate{x, y}
-							break
-						}
-					}
-					if capTrench, ok = digLayout.DigMap[currentCoordinate.Move(DIRECTION_UP)]; ok && capTrench.DigDirection == DIRECTION_UP {
-						// ..................^....
-						// ....^>>>>>>>>>>>>>>....
-						// ....^..................
-						isInterior = true
-					}
-
-					if capTrench, ok = digLayout.DigMap[currentCoordinate.Move(DIRECTION_DOWN)]; ok && capTrench.DigDirection == DIRECTION_UP {
-						// ....^...................
-						// ....^<<<<<<<<<<<<<<<....
-						// ...................^...
-						isInterior = true
-					}
-				} // trench.DigDirection == DIRECTION_UP
-
-				if trench.DigDirection == DIRECTION_DOWN {
-					// Skip past any remaining trenches
-					for ; x < digLayout.XMax-1; x += 1 {
-						currentCoordinate = coordinate{x, y}
-						if _, ok := digLayout.DigMap[currentCoordinate]; !ok {
-							x -= 1
-							currentCoordinate = coordinate{x, y}
-							break
-						}
-					}
-
-					if capTrench, ok = digLayout.DigMap[currentCoordinate.Move(DIRECTION_UP)]; ok && capTrench.DigDirection == DIRECTION_DOWN {
-						// ..................v....
-						// ....v<<<<<<<<<<<<<v....
-						// ....v..................
-						isInterior = false
-					}
-
-					if capTrench, ok = digLayout.DigMap[currentCoordinate.Move(DIRECTION_DOWN)]; ok && capTrench.DigDirection == DIRECTION_DOWN {
-						// ....v...................
-						// ....v>>>>>>>>>>>>>>>....
-						// ...................v...
-						isInterior = false
-					}
-				} //trench.DigDirection == DIRECTION_DOWN
-
-				continue
-			}
-
-			// If we are not on the interior, skip this coord
-			if !isInterior {
-				continue
-			}
-
-			digLayout.DigMap[currentCoordinate] = interiorTrench
-		} // end xLoop
-	} // end yLoop
 }
 
 func (digLayout *DigLayoutData) CalculateTotalVolume() int {
-	return len(digLayout.DigMap)
+	totalArea := 0
+
+	// Use shoelace formula to determine total internal area
+	for i := 0; i < len(digLayout.trenchCoordinates); i += 1 {
+		coordOne := digLayout.trenchCoordinates[i]
+		coordTwo := digLayout.trenchCoordinates[(i+1)%len(digLayout.trenchCoordinates)]
+
+		// Add the determinate of the matrix:
+		// | coordOne.X  coordTwo.X |
+		// | coordOne.Y  coordTwo.Y |
+		totalArea += coordOne.X*coordTwo.Y - coordOne.Y*coordTwo.X
+
+		// Then also add the "area" due to the perimeter trenches
+		//
+		// It is okay to half this due to Picks theorem
+		totalArea += abs(coordOne.X-coordTwo.X) + abs(coordOne.Y-coordTwo.Y)
+	}
+
+	// See Picks theorem
+	return totalArea/2 + 1
 }
