@@ -21,12 +21,9 @@ type comparisonFunctionType func(int, int) int
 //
 // such that the range values can never be greater than 2000
 func getUpdateFuncs(comparisonType comparisonTypeEnum) (comparisonFunctionType, comparisonFunctionType) {
-	min2Arg := func(i1, i2 int) int { return min(i1, i2) }
-	max2Arg := func(i1, i2 int) int { return max(i1, i2) }
-
 	if comparisonType == LESS_THAN {
-		return min2Arg, max2Arg
+		return func(i1, i2 int) int { return min(i1, i2) }, func(i1, i2 int) int { return max(i1, i2) }
 	} else {
-		return max2Arg, min2Arg
+		return func(i1, i2 int) int { return max(i1, i2+1) }, func(i1, i2 int) int { return min(i1, i2+1) }
 	}
 }
