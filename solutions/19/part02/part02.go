@@ -26,6 +26,8 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		workflowMap[newWorkflow.WorkflowName] = newWorkflow
 	}
 
+	log.Info().Msg("Finished Parsing Workflows")
+
 	allPartSpaceRanges := make([]lib.PartPropertySpaceRange, 0)
 	totalAcceptedSpace := 0
 
