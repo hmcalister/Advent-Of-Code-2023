@@ -2,7 +2,7 @@ package part01
 
 import (
 	"bufio"
-	"hmcalister/aoc19/lib"
+	"hmcalister/aoc19/part01/lib"
 
 	"github.com/rs/zerolog/log"
 )
