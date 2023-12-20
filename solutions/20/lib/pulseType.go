@@ -8,3 +8,9 @@ const (
 	LOW_PULSE  PulseTypeEnum = iota
 	HIGH_PULSE PulseTypeEnum = iota
 )
+
+type pulseEvent struct {
+	PulseValue PulseTypeEnum
+	SenderID   string
+	ReceiverID string
+}
