@@ -94,12 +94,6 @@ func ParseFileToModuleConfiguration(fileScanner *bufio.Scanner) *ModuleConfigura
 }
 
 func (moduleConfig *ModuleConfigurationData) PushButton() {
-	type pulseEvent struct {
-		PulseValue PulseTypeEnum
-		SenderID   string
-		ReceiverID string
-	}
-
 	pulsesQueue := make([]pulseEvent, 0)
 	pulsesQueue = append(pulsesQueue, pulseEvent{
 		PulseValue: LOW_PULSE,
@@ -142,16 +136,44 @@ func (moduleConfig *ModuleConfigurationData) PushButton() {
 }
 
 func (moduleConfig *ModuleConfigurationData) FindLowestButtonPushesToAchieve_RX_LOW() int {
-	type pulseEvent struct {
-		PulseValue PulseTypeEnum
-		SenderID   string
-		ReceiverID string
+	// The strategy here is to detect all of the cycles in the module config
+	//
+	// The puzzleInput is set up such that the broadcast module sends a signal to 4 other modules
+	// then those four modules constitute the start of a separate cycle each. The module RX only
+	// gets a LOW input when all of these cycles line up, so taking the LCM of the cycle lengths should be enough.
+
+	var rxInput string
+rxInputSearchLoop:
+	for currentModuleID, currentModule := range moduleConfig.AllModules {
+		for _, outputModuleID := range currentModule.GetModuleBase().OutputModules {
+			if outputModuleID == "rx" {
+				rxInput = currentModuleID
+				break rxInputSearchLoop
+			}
+		}
 	}
 
-	numButtonPresses := 0
-	for {
-		numButtonPresses += 1
-		log.Debug().Int("ButtonPress", numButtonPresses).Send()
+	cycleEnds := make([]string, 0)
+	for currentModuleID, currentModule := range moduleConfig.AllModules {
+		for _, outputModuleID := range currentModule.GetModuleBase().OutputModules {
+			if outputModuleID == rxInput {
+				cycleEnds = append(cycleEnds, currentModuleID)
+				break
+			}
+		}
+	}
+
+	log.Debug().Interface("CycleEnds", cycleEnds).Send()
+	cycleEndToLengthMap := make(map[string]int)
+	for _, cycleEndID := range cycleEnds {
+		cycleEndToLengthMap[cycleEndID] = 0
+	}
+	cycleLengthsDetected := 0
+
+	var numButtonPushes int
+	numButtonPushes = 0
+	for cycleLengthsDetected < len(cycleEnds) {
+		numButtonPushes += 1
 
 		pulsesQueue := make([]pulseEvent, 0)
 		pulsesQueue = append(pulsesQueue, pulseEvent{
@@ -163,7 +185,20 @@ func (moduleConfig *ModuleConfigurationData) FindLowestButtonPushesToAchieve_RX_
 		var nextPulseEvent pulseEvent
 		for len(pulsesQueue) > 0 {
 			nextPulseEvent, pulsesQueue = pulsesQueue[0], pulsesQueue[1:]
-			moduleConfig.TotalPulses[nextPulseEvent.PulseValue] += 1
+
+			// If we have an emission from a cycle end
+			if currentValue, ok := cycleEndToLengthMap[nextPulseEvent.SenderID]; ok {
+				// If we have both not registered this cycle end AND the pulse is high, we are good to go!
+				if currentValue == 0 && nextPulseEvent.PulseValue == HIGH_PULSE {
+					cycleEndToLengthMap[nextPulseEvent.SenderID] = numButtonPushes
+					log.Debug().
+						Int("CycleLength", numButtonPushes).
+						Str("CycleEndID", nextPulseEvent.SenderID).
+						Interface("CycleLengthsMap", cycleEndToLengthMap).
+						Send()
+					cycleLengthsDetected += 1
+				}
+			}
 
 			log.Trace().Interface("CurrentPulse", nextPulseEvent).Msg("NextPulseEvent")
 
@@ -185,10 +220,6 @@ func (moduleConfig *ModuleConfigurationData) FindLowestButtonPushesToAchieve_RX_
 					ReceiverID: neighborID,
 				}
 
-				if newPulseEvent.ReceiverID == "rx" && newPulseEvent.PulseValue == LOW_PULSE {
-					return numButtonPresses
-				}
-
 				pulsesQueue = append(pulsesQueue, newPulseEvent)
 
 				log.Trace().
@@ -197,4 +228,13 @@ func (moduleConfig *ModuleConfigurationData) FindLowestButtonPushesToAchieve_RX_
 			}
 		}
 	}
+
+	// Now, cycleLengths has the lengths of each cycle, we just have to find the LCM of this
+
+	cycleLengths := make([]int, 0)
+	for _, cycleLength := range cycleEndToLengthMap {
+		cycleLengths = append(cycleLengths, cycleLength)
+	}
+
+	return lcmOfSlice(cycleLengths)
 }
