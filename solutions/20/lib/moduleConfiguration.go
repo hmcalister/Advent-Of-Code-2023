@@ -140,3 +140,61 @@ func (moduleConfig *ModuleConfigurationData) PushButton() {
 		}
 	}
 }
+
+func (moduleConfig *ModuleConfigurationData) FindLowestButtonPushesToAchieve_RX_LOW() int {
+	type pulseEvent struct {
+		PulseValue PulseTypeEnum
+		SenderID   string
+		ReceiverID string
+	}
+
+	numButtonPresses := 0
+	for {
+		numButtonPresses += 1
+		log.Debug().Int("ButtonPress", numButtonPresses).Send()
+
+		pulsesQueue := make([]pulseEvent, 0)
+		pulsesQueue = append(pulsesQueue, pulseEvent{
+			PulseValue: LOW_PULSE,
+			SenderID:   "button",
+			ReceiverID: "broadcaster",
+		})
+
+		var nextPulseEvent pulseEvent
+		for len(pulsesQueue) > 0 {
+			nextPulseEvent, pulsesQueue = pulsesQueue[0], pulsesQueue[1:]
+			moduleConfig.TotalPulses[nextPulseEvent.PulseValue] += 1
+
+			log.Trace().Interface("CurrentPulse", nextPulseEvent).Msg("NextPulseEvent")
+
+			targetModule, ok := moduleConfig.AllModules[nextPulseEvent.ReceiverID]
+			if !ok {
+				log.Trace().Msgf("failed to find any module with name %v, continuing", nextPulseEvent.ReceiverID)
+				continue
+			}
+			moduleResponse := targetModule.ReceivePulse(nextPulseEvent.SenderID, nextPulseEvent.PulseValue)
+			if moduleResponse == NO_PULSE {
+				log.Trace().Msg("no pulse received from event")
+				continue
+			}
+
+			for _, neighborID := range targetModule.GetModuleBase().OutputModules {
+				newPulseEvent := pulseEvent{
+					PulseValue: moduleResponse,
+					SenderID:   targetModule.GetModuleBase().ModuleID,
+					ReceiverID: neighborID,
+				}
+
+				if newPulseEvent.ReceiverID == "rx" && newPulseEvent.PulseValue == LOW_PULSE {
+					return numButtonPresses
+				}
+
+				pulsesQueue = append(pulsesQueue, newPulseEvent)
+
+				log.Trace().
+					Interface("GeneratedPulseEvent", newPulseEvent).
+					Msg("PulseEventGenerated")
+			}
+		}
+	}
+}
