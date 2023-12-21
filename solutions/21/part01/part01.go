@@ -1,7 +1,14 @@
 package part01
 
-import "bufio"
+import (
+	"bufio"
+	"hmcalister/aoc21/lib"
+)
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
-	return 0, nil
+	garden := lib.ParseFileToGardenData(*fileScanner)
+	garden.DebugLog()
+	numPlots := garden.NumReachableGardensInExactlyNumSteps(64)
+
+	return numPlots, nil
 }
