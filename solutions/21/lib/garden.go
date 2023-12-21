@@ -17,6 +17,8 @@ const (
 type GardenData struct {
 	SurfaceData     map[coordinate]SurfaceTypeEnum
 	StartCoordinate coordinate
+	MapWidth        int
+	MapHeight       int
 }
 
 func ParseFileToGardenData(fileScanner bufio.Scanner) GardenData {
@@ -29,6 +31,8 @@ func ParseFileToGardenData(fileScanner bufio.Scanner) GardenData {
 		line := fileScanner.Text()
 		for runeIndex, r := range line {
 			currentCoordinate := coordinate{X: runeIndex, Y: yPosition}
+			newGarden.MapWidth = max(newGarden.MapWidth, runeIndex)
+			newGarden.MapHeight = max(newGarden.MapHeight, yPosition)
 			log.Trace().
 				Str("RawLine", line).
 				Send()
@@ -53,6 +57,8 @@ func (garden GardenData) DebugLog() {
 	log.Debug().
 		Interface("StartCoordinate", garden.StartCoordinate).
 		Int("NumCoordinatesMapped", len(garden.SurfaceData)).
+		Int("MapWidth", garden.MapWidth).
+		Int("MapHeight", garden.MapHeight).
 		Msg("GardenDebug")
 }
 
@@ -81,6 +87,7 @@ func (garden GardenData) NumReachableGardensInExactlyNumSteps(maxSteps int) int 
 		for coord := range currentPlots {
 			for _, direction := range DIRECTIONS {
 				nextCoord := coord.Move(direction)
+
 				nextStep, ok := garden.SurfaceData[nextCoord]
 				if nextStep != SURFACE_PLOT || !ok {
 					continue
