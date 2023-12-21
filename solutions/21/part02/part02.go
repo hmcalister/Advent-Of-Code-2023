@@ -28,17 +28,25 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 		Interface("ProbeValues", []int{n, n + mapSize, n + 2*mapSize}).
 		Send()
 
-	// log.Debug().Int("Test", garden.NumReachableGardensInExactlyNumSteps(100)).Send()
-	results := garden.ProbeWithValues([]int{n, n + mapSize, n + 2*mapSize})
+	// garden.NumReachableGardensInExactlyNumSteps(70)
+	results := garden.FindNewPlotsAtValues([]int{n, n + mapSize, n + 2*mapSize})
 
-	xVals := []float64{float64(n), float64(n + mapSize), float64(n + 2*mapSize)}
+	xVals := []float64{0.0, 1.0, 2.0}
 	yVals := []float64{float64(results[0]), float64(results[1]), float64(results[2])}
 	polynomial := polyfit.NewFit(xVals, yVals, 2).Solve()
 
-	X := float64(n + (numSteps/mapSize)*mapSize)
+	// polynomial := []float64{4059, 15823, 15397}
+	X := float64(numSteps / mapSize)
+	log.Debug().
+		Interface("yVals", yVals).
+		Interface("Coefficients", polynomial).
+		Float64("X", X).
+		Send()
 	result := polynomial[0] + X*polynomial[1] + X*X*polynomial[2]
 
 	log.Debug().Float64("Result", result).Send()
+
+	// 630129824772393
 
 	return 0, nil
 }
