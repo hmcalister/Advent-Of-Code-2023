@@ -81,7 +81,8 @@ func (garden GardenData) NumReachableGardensInExactlyNumSteps(maxSteps int) int 
 		for coord := range currentPlots {
 			for _, direction := range DIRECTIONS {
 				nextCoord := coord.Move(direction)
-				if garden.SurfaceData[nextCoord] == SURFACE_ROCK {
+				nextStep, ok := garden.SurfaceData[nextCoord]
+				if nextStep != SURFACE_PLOT || !ok {
 					continue
 				}
 				log.Trace().
