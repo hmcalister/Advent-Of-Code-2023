@@ -35,7 +35,7 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	yVals := []float64{float64(results[0]), float64(results[1]), float64(results[2])}
 	polynomial := polyfit.NewFit(xVals, yVals, 2).Solve()
 
-	// polynomial := []float64{4059, 15823, 15397}
+	// polynomial := []float64{3893,15495,15397}
 	X := float64(numSteps / mapSize)
 	log.Debug().
 		Interface("yVals", yVals).
@@ -46,7 +46,5 @@ func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 
 	log.Debug().Float64("Result", result).Send()
 
-	// 630129824772393
-
-	return 0, nil
+	return int(result), nil
 }
