@@ -115,7 +115,7 @@ func (garden GardenData) NumReachableGardensInExactlyNumSteps(maxSteps int) int 
 	return len(nextPlots)
 }
 
-func (garden GardenData) ProbeWithValues(probeValues []int) []int {
+func (garden GardenData) FindNewPlotsAtValues(probeValues []int) []int {
 	slices.Sort(probeValues)
 	results := make([]int, 0)
 
@@ -134,11 +134,6 @@ func (garden GardenData) ProbeWithValues(probeValues []int) []int {
 	for stepNumber := 0; stepNumber <= probeValues[len(probeValues)-1]; stepNumber += 1 {
 		currentPlots = nextPlots
 		nextPlots = make(map[coordinate]interface{})
-
-		log.Trace().
-			Int("CurrentStepNumber", stepNumber).
-			Int("NumPlotsToConsider", len(currentPlots)).
-			Send()
 
 		for coord := range currentPlots {
 			for _, direction := range DIRECTIONS {
@@ -162,9 +157,9 @@ func (garden GardenData) ProbeWithValues(probeValues []int) []int {
 		if slices.Contains(probeValues, stepNumber) {
 			log.Debug().
 				Int("CurrentStepNumber", stepNumber).
-				Int("Result", len(nextPlots)).
+				Int("Result", len(currentPlots)).
 				Send()
-			results = append(results, len(nextPlots))
+			results = append(results, len(currentPlots))
 		}
 	}
 
