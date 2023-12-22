@@ -47,17 +47,37 @@ func createBrickFromCoordinates(brickStart, brickEnd Coordinate) BrickData {
 	}
 }
 
-func (brick BrickData) enumerateCoordinates() []Coordinate {
+func (brick BrickData) enumerateXYCoordinates() []Coordinate {
+	area := brick.Lengths.X * brick.Lengths.Y
+	allCoordinates := make([]Coordinate, area)
+	count := 0
+	for dx := 0; dx < brick.Lengths.X; dx += 1 {
+		for dy := 0; dy < brick.Lengths.Y; dy += 1 {
+			allCoordinates[count] = Coordinate{
+				X: brick.Start.X + dx,
+				Y: brick.Start.Y + dy,
+				Z: brick.Start.Z,
+			}
+			count += 1
+		}
+	}
+
+	return allCoordinates
+}
+
+func (brick BrickData) enumerateAllCoordinates() []Coordinate {
 	volume := brick.Lengths.X * brick.Lengths.Y * brick.Lengths.Z
 	allCoordinates := make([]Coordinate, volume)
+	count := 0
 	for dx := 0; dx < brick.Lengths.X; dx += 1 {
 		for dy := 0; dy < brick.Lengths.Y; dy += 1 {
 			for dz := 0; dz < brick.Lengths.Z; dz += 1 {
-				allCoordinates = append(allCoordinates, Coordinate{
+				allCoordinates[count] = Coordinate{
 					X: brick.Start.X + dx,
 					Y: brick.Start.Y + dy,
 					Z: brick.Start.Z + dz,
-				})
+				}
+				count += 1
 			}
 		}
 	}
