@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"slices"
+	"sort"
 
 	"github.com/rs/zerolog/log"
 )
@@ -44,6 +45,10 @@ func ParseFileToBrickPile(fileScanner *bufio.Scanner) BrickPileData {
 			pile.CoordinateMap[coord] = brick.ID
 		}
 	}
+
+	sort.Slice(pile.Bricks, func(i, j int) bool {
+		return pile.Bricks[i].Start.Z < pile.Bricks[j].Start.Z
+	})
 
 	return pile
 }
@@ -181,15 +186,15 @@ func (pile BrickPileData) SimulateBrickFall() {
 
 	// SimulateBrickFallLoop:
 	for {
-		log.Debug().Msg("Brick Fall Loop Start")
+		log.Trace().Msg("Brick Fall Loop Start")
 		// Start by finding an unsupported brick
 		unsupportedBrickIndex, err := pile.findUnimpededUnsupportedBrickIndex()
 		if err != nil {
 			// We have no more unsupported bricks!
-			return
+			break
 		}
 
-		log.Debug().Msgf("Moving Brick %v", unsupportedBrickIndex)
+		log.Trace().Msgf("Moving Brick %v", unsupportedBrickIndex)
 		// Move this brick down under gravity
 		pile.moveBrickToSupportedPosition(unsupportedBrickIndex)
 	} // SimulateBrickFallLoop
