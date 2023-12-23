@@ -2,6 +2,10 @@ package lib
 
 import (
 	"bufio"
+	"container/heap"
+	"errors"
+	"fmt"
+	"sort"
 
 	"github.com/rs/zerolog/log"
 )
@@ -24,6 +28,7 @@ func ParseFileToTrail(fileScanner *bufio.Scanner) *TrailData {
 		line = fileScanner.Text()
 
 		log.Debug().
+			Int("LineNumber", trail.mapHeight).
 			Str("RawLine", line).
 			Int("NumRunes", len(line)).
 			Send()
@@ -79,24 +84,30 @@ func ParseFileToTrail(fileScanner *bufio.Scanner) *TrailData {
 }
 
 func (trail *TrailData) VisualizePath(path PathNodeData) {
+	line := make([]rune, trail.mapWidth)
+	trailLine := make([]rune, trail.mapWidth)
 	for y := 0; y < trail.mapHeight; y += 1 {
-		line := make([]rune, trail.mapWidth)
 		for x := 0; x < trail.mapWidth; x += 1 {
 			currentCoord := Coordinate{
 				X: x,
 				Y: y,
 			}
 
-			if _, isInPath := path.VisitedCoordinates[currentCoord]; isInPath {
+			surfaceType, isInTrailMap := trail.trailMap[currentCoord]
+			trailLine[x] = surfaceTypeToRuneMap[surfaceType]
+
+			if _, isInPath := path.visitedCoordinates[currentCoord]; isInPath {
 				line[x] = 'O'
-			} else if surfaceType, isInTrailMap := trail.trailMap[currentCoord]; isInTrailMap {
+			} else if isInTrailMap {
 				line[x] = surfaceTypeToRuneMap[surfaceType]
 			} else {
 				log.Fatal().Msgf("failed to identify coordinate %v in either path or trailMap", currentCoord)
 			}
+
 		}
 		log.Info().
-			Str("Line %05v: ", string(line)).
+			Str(fmt.Sprintf("Line %03v", y), string(line)).
+			Str(fmt.Sprintf("TrailLine %03v", y), string(trailLine)).
 			Msg("VisualizePath")
 	}
 }
