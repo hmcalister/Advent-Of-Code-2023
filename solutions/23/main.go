@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
-	"hmcalister/aoc23/part01"
+	"hmcalister/aoc23/part02"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -37,7 +37,7 @@ func main() {
 	defer file.Close()
 
 	fileScanner := bufio.NewScanner(file)
-	result, err := part01.ProcessInput(fileScanner)
+	result, err := part02.ProcessInput(fileScanner)
 	if err != nil {
 		log.Panic().Msgf("error processing file input: %v", err)
 	}
