@@ -26,5 +26,6 @@ func (node PathNodeData) NextPathNode(direction DirectionEnum) PathNodeData {
 }
 
 func (node PathNodeData) String() string {
-	return fmt.Sprintf("%v Len %v", node.CurrentCoordinate.String(), len(node.VisitedCoordinates))
+	return fmt.Sprintf("%v Len %v", node.currentCoordinate.String(), len(node.visitedCoordinates))
 }
+
