@@ -112,6 +112,91 @@ func (trail *TrailData) VisualizePath(path PathNodeData) {
 	}
 }
 
-// func (trail *TrailData) FindShortestPath() PathNodeData {
+func (trail *TrailData) FindPathSlippery() (PathNodeData, error) {
+	pathNodeQueue := make(PathNodePriorityQueue, 0)
+	heap.Init(&pathNodeQueue)
 
-// }
+	startNode := PathNodeData{
+		currentCoordinate:  trail.startCoordinate,
+		visitedCoordinates: make(map[Coordinate]interface{}),
+	}
+	startNode.visitedCoordinates[startNode.currentCoordinate] = visitedCoordinatePresenceIndicator
+	heap.Push(&pathNodeQueue, startNode)
+
+	directions := []DirectionEnum{DIRECTION_UP, DIRECTION_RIGHT, DIRECTION_DOWN, DIRECTION_LEFT}
+	finishPathNodes := make([]PathNodeData, 0)
+
+	var currentNode PathNodeData
+	for pathNodeQueue.Len() > 0 {
+		currentNode = heap.Pop(&pathNodeQueue).(PathNodeData)
+
+		log.Debug().
+			Str("CurrentCoord", currentNode.currentCoordinate.String()).
+			Int("CurrentPathLen", len(currentNode.visitedCoordinates)).
+			Int("QueueLength", currentNode.PathLength()).
+			Msg("PathFindCurrentNode")
+
+		if currentNode.currentCoordinate == trail.endCoordinate {
+			log.Debug().
+				Str("FinishedPathNode", currentNode.String()).
+				Msg("CompletePathFound")
+			finishPathNodes = append(finishPathNodes, currentNode)
+			continue
+		}
+
+		for _, direction := range directions {
+			nextCoord := currentNode.currentCoordinate.Move(direction)
+			if _, alreadyVisited := currentNode.visitedCoordinates[nextCoord]; alreadyVisited {
+				continue
+			}
+
+			nextSurfaceType, nextCoordInTrailMap := trail.trailMap[nextCoord]
+			if !nextCoordInTrailMap {
+				continue
+			}
+
+			switch nextSurfaceType {
+			case SURFACE_FOREST:
+				continue
+			case SURFACE_SLOPE_UP:
+				if direction != DIRECTION_UP {
+					continue
+				}
+			case SURFACE_SLOPE_RIGHT:
+				if direction != DIRECTION_RIGHT {
+					continue
+				}
+			case SURFACE_SLOPE_DOWN:
+				if direction != DIRECTION_DOWN {
+					continue
+				}
+			case SURFACE_SLOPE_LEFT:
+				if direction != DIRECTION_LEFT {
+					continue
+				}
+			case SURFACE_PATH:
+			}
+
+			log.Trace().
+				Str("CurrentCoordinate", currentNode.currentCoordinate.String()).
+				Str("NextDirection", direction.String()).
+				Str("NextCoordinate", nextCoord.String()).
+				Str("NextSurfaceType", nextSurfaceType.String()).
+				Msg("NewNodeAdded")
+
+			nextNode := currentNode.NextPathNode(direction)
+			heap.Push(&pathNodeQueue, nextNode)
+		}
+	}
+
+	if len(finishPathNodes) == 0 {
+		return startNode, errors.New("no path from start to end found")
+	}
+
+	sort.Slice(finishPathNodes, func(i, j int) bool {
+		return finishPathNodes[i].PathLength() > finishPathNodes[j].PathLength()
+	})
+
+	return finishPathNodes[0], nil
+}
+
