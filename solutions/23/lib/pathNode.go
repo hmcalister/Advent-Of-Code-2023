@@ -29,3 +29,7 @@ func (node PathNodeData) String() string {
 	return fmt.Sprintf("%v Len %v", node.currentCoordinate.String(), len(node.visitedCoordinates))
 }
 
+func (node PathNodeData) PathLength() int {
+	return len(node.visitedCoordinates)
+}
+
