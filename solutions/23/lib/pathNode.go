@@ -12,6 +12,19 @@ type PathNodeData struct {
 }
 
 func (node PathNodeData) NextPathNode(direction DirectionEnum) PathNodeData {
+	nextCoord := node.currentCoordinate.Move(direction)
+	nextNode := PathNodeData{
+		currentCoordinate:  nextCoord,
+		visitedCoordinates: make(map[Coordinate]interface{}),
+	}
+	for k, v := range node.visitedCoordinates {
+		nextNode.visitedCoordinates[k] = v
+	}
+	nextNode.visitedCoordinates[nextCoord] = visitedCoordinatePresenceIndicator
+
+	return nextNode
+}
+
 func (node PathNodeData) String() string {
 	return fmt.Sprintf("%v Len %v", node.CurrentCoordinate.String(), len(node.VisitedCoordinates))
 }
