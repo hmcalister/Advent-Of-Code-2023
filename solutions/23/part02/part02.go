@@ -1,7 +1,14 @@
 package part02
 
-import "bufio"
+import (
+	"bufio"
+	"hmcalister/aoc23/lib"
+)
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
-	return 0, nil
+	trail := lib.ParseFileToTrail(fileScanner)
+	condensedTrail := lib.ConvertTrailDataToCondensedTrailData(trail)
+	longestPath := condensedTrail.FindPathNonSlippery()
+
+	return longestPath, nil
 }
