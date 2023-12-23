@@ -199,4 +199,3 @@ func (trail *TrailData) FindPathSlippery() (PathNodeData, error) {
 
 	return finishPathNodes[0], nil
 }
-
