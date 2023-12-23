@@ -33,3 +33,23 @@ func (node PathNodeData) PathLength() int {
 	return len(node.visitedCoordinates)
 }
 
+type PathNodePriorityQueue []PathNodeData
+
+func (pq PathNodePriorityQueue) Len() int { return len(pq) }
+func (pq PathNodePriorityQueue) Less(i, j int) bool {
+	return len(pq[i].visitedCoordinates) < len(pq[j].visitedCoordinates)
+}
+func (pq PathNodePriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+func (pq *PathNodePriorityQueue) Push(x any) {
+	item := x.(PathNodeData)
+	*pq = append(*pq, item)
+}
+func (pq *PathNodePriorityQueue) Pop() any {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
+}
