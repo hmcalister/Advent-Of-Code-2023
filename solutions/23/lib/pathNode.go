@@ -3,10 +3,10 @@ package lib
 import "fmt"
 
 type PathNodeData struct {
-	currentCoordinate  Coordinate
-	visitedCoordinates map[Coordinate]interface{}
+	CurrentCoordinate  Coordinate
+	VisitedCoordinates map[Coordinate]interface{}
 }
 
 func (node PathNodeData) String() string {
-	return fmt.Sprintf("%v Len %v", node.currentCoordinate.String(), len(node.visitedCoordinates))
+	return fmt.Sprintf("%v Len %v", node.CurrentCoordinate.String(), len(node.VisitedCoordinates))
 }
