@@ -2,7 +2,10 @@ module hmcalister/aoc24
 
 go 1.21.0
 
-require github.com/rs/zerolog v1.31.0
+require (
+	github.com/rs/zerolog v1.31.0
+	gonum.org/v1/gonum v0.14.0
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
