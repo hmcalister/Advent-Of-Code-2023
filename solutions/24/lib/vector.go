@@ -5,37 +5,34 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"gonum.org/v1/gonum/mat"
 )
 
-type Vector struct {
-	X float64
-	Y float64
-	Z float64
+func vectorToString(v *mat.VecDense) string {
+	// f := mat.Formatted(v, mat.FormatPython())
+	return fmt.Sprintf("(%v, %v, %v)", v.AtVec(0), v.AtVec(1), v.AtVec(2))
 }
 
-func (v Vector) String() string {
-	return fmt.Sprintf("(%v, %v, %v)", v.X, v.Y, v.Z)
-}
-
-func parseFieldsToVector(fields []string) (Vector, error) {
+func parseFieldsToVector(fields []string) (*mat.VecDense, error) {
 	if len(fields) != 3 {
-		return Vector{}, errors.New("cannot create vector with incorrect number of fields")
+		return nil, errors.New("cannot create *mat.VecDense with incorrect number of fields")
 	}
 
 	x, err := strconv.Atoi(strings.TrimSpace(fields[0]))
 	if err != nil {
-		return Vector{}, errors.New("failed to parse x coordinate")
+		return nil, errors.New("failed to parse x coordinate")
 	}
 
 	y, err := strconv.Atoi(strings.TrimSpace(fields[1]))
 	if err != nil {
-		return Vector{}, errors.New("failed to parse y coordinate")
+		return nil, errors.New("failed to parse y coordinate")
 	}
 
 	z, err := strconv.Atoi(strings.TrimSpace(fields[2]))
 	if err != nil {
-		return Vector{}, errors.New("failed to parse z coordinate")
+		return nil, errors.New("failed to parse z coordinate")
 	}
 
-	return Vector{float64(x), float64(y), float64(z)}, nil
+	return mat.NewVecDense(3, []float64{float64(x), float64(y), float64(z)}), nil
 }
