@@ -26,7 +26,7 @@ func (node GraphTraversalData) NextGraphTraversalData(nextVertex string, edgeWei
 	for k, v := range node.VisitedVertices {
 		nextNode.VisitedVertices[k] = v
 	}
-	nextNode.VisitedVertices[nextVertex] = visitedCoordinatePresenceIndicator
+	nextNode.VisitedVertices[node.CurrentVertex] = visitedCoordinatePresenceIndicator
 
 	return nextNode
 }
