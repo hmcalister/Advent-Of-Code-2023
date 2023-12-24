@@ -118,7 +118,7 @@ func (hailstone HailstoneData) FindPathIntersectionPosition(secondHailstone Hail
 	return pathIntersectionPosition, nil
 }
 
-func (hailstone HailstoneData) FindCollisionTimeInXY(secondHailstone HailstoneData) (float64, error) {
+func (hailstone HailstoneData) FindCollisionTime(secondHailstone HailstoneData) (float64, error) {
 	// Find the collision time for X and for Y, and if they are equal return it
 	// Otherwise, return error
 	//
@@ -141,17 +141,27 @@ func (hailstone HailstoneData) FindCollisionTimeInXY(secondHailstone HailstoneDa
 		}
 	}
 
+	if secondHailstone.Velocity.AtVec(2) == hailstone.Velocity.AtVec(2) {
+		if secondHailstone.Position.AtVec(2) == hailstone.Position.AtVec(2) {
+			return 0.0, nil
+		} else {
+			return 0.0, errors.New("no collision possible when y velocities equal")
+		}
+	}
+
 	xCollisionTime := (hailstone.Position.AtVec(0) - secondHailstone.Position.AtVec(0)) / (secondHailstone.Velocity.AtVec(0) - hailstone.Velocity.AtVec(0))
 	yCollisionTime := (hailstone.Position.AtVec(1) - secondHailstone.Position.AtVec(1)) / (secondHailstone.Velocity.AtVec(1) - hailstone.Velocity.AtVec(1))
+	zCollisionTime := (hailstone.Position.AtVec(2) - secondHailstone.Position.AtVec(2)) / (secondHailstone.Velocity.AtVec(2) - hailstone.Velocity.AtVec(2))
 
 	log.Trace().
 		Str("Hailstone", hailstone.String()).
 		Str("SecondHailstone", secondHailstone.String()).
 		Float64("XCollisionTime", xCollisionTime).
 		Float64("YCollisionTime", yCollisionTime).
+		Float64("ZCollisionTime", zCollisionTime).
 		Send()
 
-	if xCollisionTime == yCollisionTime {
+	if xCollisionTime == yCollisionTime && xCollisionTime == zCollisionTime {
 		return xCollisionTime, nil
 	} else {
 		return 0.0, errors.New("collision does not occur")
