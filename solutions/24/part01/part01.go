@@ -7,7 +7,7 @@ import (
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	storm := lib.ParseFileToStorm(fileScanner)
-	storm.DetectCollisionsInXY(0, 1)
+	numCollisions := storm.PathIntersectionInXY(200000000000000, 400000000000000)
 
-	return 0, nil
+	return numCollisions, nil
 }
