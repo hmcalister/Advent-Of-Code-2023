@@ -145,15 +145,39 @@ func ConvertTrailDataToCondensedTrailData(trailData *TrailData) *CondensedTrailD
 
 func (condensedTrail *CondensedTrailData) FindPathNonSlippery() int {
 
-	graphTraversalList := make([]GraphTraversalData, 0)
-	graphTraversalList = append(graphTraversalList, GraphTraversalData{
-		CurrentVertex:   condensedTrail.startCoordinate.String(),
-		VisitedVertices: make(map[string]interface{}),
-		TotalDistance:   0,
-	})
-
 	adjacencyMap, _ := condensedTrail.TrailGraph.AdjacencyMap()
 	bestFinishPathLen := -1
+
+	// It appears the start node and end node connect to exactly one other node
+	// So use those other nodes as proxy start/end and just add the additional length
+
+	additionalDistance := 0
+	var proxyStartVertex string
+	var proxyEndVertex string
+
+	if len(adjacencyMap[condensedTrail.startCoordinate.String()]) != 1 {
+		log.Fatal().Msg("start vertex has more than one neighbor")
+	}
+	for k, v := range adjacencyMap[condensedTrail.startCoordinate.String()] {
+		proxyStartVertex = k
+		additionalDistance += v.Properties.Weight
+		log.Debug().Str("ProxyStartVertex", proxyStartVertex).Send()
+	}
+	if len(adjacencyMap[condensedTrail.endCoordinate.String()]) != 1 {
+		log.Fatal().Msg("end vertex has more than one neighbor")
+	}
+	for k, v := range adjacencyMap[condensedTrail.endCoordinate.String()] {
+		proxyEndVertex = k
+		additionalDistance += v.Properties.Weight
+		log.Debug().Str("ProxyEndVertex", proxyEndVertex).Send()
+	}
+
+	graphTraversalList := make([]GraphTraversalData, 0)
+	graphTraversalList = append(graphTraversalList, GraphTraversalData{
+		CurrentVertex:   proxyStartVertex,
+		VisitedVertices: make(map[string]interface{}),
+		TotalDistance:   additionalDistance,
+	})
 
 	var currentTraversalData GraphTraversalData
 	for len(graphTraversalList) > 0 {
@@ -166,13 +190,16 @@ func (condensedTrail *CondensedTrailData) FindPathNonSlippery() int {
 			Int("BestFinishPathLength", bestFinishPathLen).
 			Msg("PathFindCurrentNode")
 
-		if currentTraversalData.CurrentVertex == condensedTrail.endCoordinate.String() {
+		if currentTraversalData.CurrentVertex == proxyEndVertex {
 			log.Debug().
 				Int("FinishedPathNode", currentTraversalData.TotalDistance).
 				Msg("CompletePathFound")
 
 			if bestFinishPathLen < currentTraversalData.TotalDistance {
 				bestFinishPathLen = currentTraversalData.TotalDistance
+				log.Info().
+					Int("BestFinishPathLength", bestFinishPathLen).
+					Msg("NewBestPathFound")
 			}
 			continue
 		}
