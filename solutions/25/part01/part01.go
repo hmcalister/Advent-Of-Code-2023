@@ -10,9 +10,9 @@ import (
 
 func ProcessInput(fileScanner *bufio.Scanner) (int, error) {
 	componentGraph := lib.ParseFileToComponentGraph(fileScanner)
-	newGraph := componentGraph.MinimumCut()
+	// newGraph := componentGraph.MinimumCut()
 
 	file, _ := os.Create("./graphVis.gv")
-	_ = draw.DOT(newGraph, file)
+	_ = draw.DOT(componentGraph.Graph, file)
 	return 0, nil
 }
