@@ -49,3 +49,40 @@ func (compGraph *ComponentGraph) addComponent(componentName string) {
 	}
 }
 
+func (compGraph *ComponentGraph) MinimumCut() graph.Graph[string, string] {
+	graphCopy, _ := compGraph.Graph.Clone()
+
+	var numVertices int
+	numVertices, _ = graphCopy.Order()
+
+	for numVertices > 2 {
+		allEdges, _ := graphCopy.Edges()
+		contractingEdgeIndex := rand.Int() % len(allEdges)
+		contractingEdge := allEdges[contractingEdgeIndex]
+
+		mergeLeftVertex := contractingEdge.Source
+		mergeRightVertex := contractingEdge.Target
+		graphCopy.RemoveEdge(mergeLeftVertex, mergeRightVertex)
+		adjacency, _ := graphCopy.AdjacencyMap()
+
+		newVertexName := mergeLeftVertex + ", " + mergeRightVertex
+		graphCopy.AddVertex(newVertexName)
+
+		for neighbor := range adjacency[mergeLeftVertex] {
+			graphCopy.AddEdge(newVertexName, neighbor)
+			graphCopy.RemoveEdge(mergeLeftVertex, neighbor)
+		}
+
+		for neighbor := range adjacency[mergeRightVertex] {
+			graphCopy.AddEdge(newVertexName, neighbor)
+			graphCopy.RemoveEdge(mergeRightVertex, neighbor)
+		}
+
+		graphCopy.RemoveVertex(mergeLeftVertex)
+		graphCopy.RemoveVertex(mergeRightVertex)
+
+		numVertices, _ = graphCopy.Order()
+	}
+
+	return graphCopy
+}
